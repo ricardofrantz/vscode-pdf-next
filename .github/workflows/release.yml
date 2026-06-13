@@ -9,7 +9,7 @@ on:
       release_tag:
         description: Tag name to package for a dry run or guarded manual release.
         required: true
-        default: v2.0.2
+        default: v2.1.0
       dry_run:
         description: Verify and package only; skip GitHub Release and registry publishing.
         type: boolean

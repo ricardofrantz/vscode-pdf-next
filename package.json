@@ -2,7 +2,7 @@
   "name": "pdf-preview-next",
   "displayName": "vscode-pdf Next",
   "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with PDF.js 5, live reload, search, outline, dark modes, and reliable preview state.",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "packageManager": "bun@1.3.13",
   "publisher": "ricardofrantz",
   "engines": {
@@ -149,6 +149,11 @@
           "type": "boolean",
           "default": false
         },
+        "pdf-preview.reload.automatic": {
+          "markdownDescription": "Automatically refresh the preview when the PDF file changes. Manual reload always works through the toolbar button, the `pdf-preview.refreshPreview` command, and Cmd/Ctrl+R.",
+          "type": "boolean",
+          "default": true
+        },
         "pdf-preview.reload.debounceMs": {
           "markdownDescription": "Milliseconds to wait after PDF file change notifications before refreshing the preview. Increase this if your build tool writes PDFs in multiple bursts.",
           "type": "number",
@@ -181,6 +186,12 @@
             "normal",
             "wide"
           ]
+        },
+        "pdf-preview.copy.autoCopySelection": {
+          "markdownDescription": "Automatically copy selected PDF text to the clipboard when the mouse button is released. Disabled by default because it writes to the clipboard without an explicit copy command.",
+          "type": "boolean",
+          "scope": "resource",
+          "default": false
         },
         "pdf-preview.printCommand": {
           "markdownDescription": "Custom command line used only by `vscode-pdf Next: Print Directly to Default Printer`. Use `{{file}}` as a placeholder for the PDF path; when omitted, the path is appended as the last argument. The command is executed without a shell. When empty, direct printing tries the default CUPS printer, then falls back to the system viewer.",
@@ -218,13 +229,16 @@
     "@typescript-eslint/eslint-plugin": "^8.59.0",
     "@typescript-eslint/parser": "^8.59.0",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.9.1",
-    "esbuild": "^0.28.0",
+    "@vscode/vsce": "3.9.2",
+    "esbuild": "0.28.1",
     "eslint": "^9.39.4",
     "globals": "^15.15.0",
-    "ovsx": "0.10.11",
+    "ovsx": "1.0.0",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "tmp": "0.2.6"
   },
   "extensionKind": [
     "ui"

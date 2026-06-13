@@ -58,9 +58,11 @@ To make VS Code use this viewer for PDFs:
 | `pdf-preview.default.scrollMode`   | resource | `vertical` | `vertical`, `horizontal`, or `wrapped`.                                                 |
 | `pdf-preview.default.spreadMode`   | resource | `none`     | `none`, `odd`, or `even`.                                                               |
 | `pdf-preview.reload.closeOnDelete` | window   | `false`    | Close previews when a PDF is deleted; keep disabled for build tools that replace files. |
+| `pdf-preview.reload.automatic`     | window   | `true`     | Automatically refresh previews when the PDF changes; manual reload always remains available. |
 | `pdf-preview.reload.debounceMs`    | window   | `800`      | Delay after file-change notifications before refreshing.                                |
 | `pdf-preview.appearance.theme`     | resource | `auto`     | `auto`, `light`, `dark`, `night`, `reader`, `dark-pages`, or `inverted`.                |
 | `pdf-preview.appearance.pageGap`   | resource | `normal`   | `compact`, `normal`, or `wide`.                                                         |
+| `pdf-preview.copy.autoCopySelection` | resource | `false`  | Opt-in clipboard write when selected PDF text is released with the mouse.               |
 | `pdf-preview.printCommand`         | resource | empty      | Restricted custom print command. Use `{{file}}` for the PDF path; otherwise the path is appended. Workspace/resource values are ignored when the workspace is untrusted. |
 
 Resource-scoped settings can be overridden per workspace folder or PDF resource
@@ -85,6 +87,8 @@ the system viewer; direct queue printing is available through the separate
 | Toolbar page-mode button             | Cycle Clear, Night, Reader, and Invert modes.                                                    |
 | Toolbar sidebar button               | Show or hide outline/bookmark and thumbnail panels.                                              |
 | Toolbar `Print`                      | Open the PDF in the system viewer for reliable native printing.                                  |
+| Toolbar `Refresh`                    | Force-refresh the current PDF immediately.                                                       |
+| Toolbar `Auto`                       | Toggle file-watcher automatic reload without disabling manual refresh.                           |
 | `Ctrl+R` / `Cmd+R`                   | Refresh the current PDF.                                                                         |
 | `j/k/h/l`                            | Scroll.                                                                                          |
 | `n/p` or `./,`                       | Move pages.                                                                                      |

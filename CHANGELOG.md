@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 2.1.0 (2026/06/13)
+
+- Add a separate Auto Reload toolbar toggle and `pdf-preview.reload.automatic`
+  setting while keeping manual reload available through the toolbar command,
+  command palette action, and `Cmd/Ctrl+R`.
+- Add reliable PDF text copy through the host clipboard bridge, plus opt-in
+  `pdf-preview.copy.autoCopySelection` support for copying selected PDF text on
+  mouse release.
+- Live-update open previews when Auto Reload or auto-copy settings change, and
+  keep multiple previews synchronized with settings changes.
+- Harden host-to-viewer webview message handling by validating trusted message
+  sources and known message types before dispatch.
+
 ## 2.0.2 (2026/05/12)
 
 - Fix toolbar clipping in side-by-side and Working Tree diff PDF previews by

@@ -33,6 +33,12 @@ function readReloadDebounceMs(): number {
   );
 }
 
+function readAutomaticReload(resource?: vscode.Uri): boolean {
+  return vscode.workspace
+    .getConfiguration('pdf-preview', resource)
+    .get<boolean>('reload.automatic', true);
+}
+
 export interface PdfPreviewHtmlOptions {
   csp: string;
   nonce: string;
@@ -156,6 +162,10 @@ export const PDF_VIEWER_BODY = `<body>
         <button id="reload" class="icon-button" type="button" title="Refresh PDF" aria-label="Refresh PDF">
           <svg class="icon" width="16" height="16"><use href="#icon-refresh"/></svg>
           <span class="label">Refresh</span>
+        </button>
+        <button id="autoReloadToggle" class="icon-button" type="button" title="Disable automatic reload" aria-label="Disable automatic reload" aria-pressed="true">
+          <svg class="icon" width="16" height="16"><use href="#icon-refresh"/></svg>
+          <span class="label">Auto</span>
         </button>
         <button id="openSource" class="icon-button" type="button" title="Open PDF with system viewer" aria-label="Open PDF with system viewer">
           <svg class="icon" width="16" height="16"><use href="#icon-external-link"/></svg>
@@ -341,6 +351,7 @@ export class PdfPreview extends Disposable {
   private reloadTimer: ReturnType<typeof setTimeout> | undefined;
   private reloadBurstStartedAt: number | undefined;
   private reloadDebounceMs = readReloadDebounceMs();
+  private automaticReload: boolean;
 
   constructor(
     private readonly extensionRoot: vscode.Uri,
@@ -352,6 +363,7 @@ export class PdfPreview extends Disposable {
     super();
     const config = vscode.workspace.getConfiguration('pdf-preview');
     const closeOnDelete = config.get<boolean>('reload.closeOnDelete', false);
+    this.automaticReload = readAutomaticReload(this.resource);
 
     webviewEditor.webview.options = {
       enableScripts: true,
@@ -362,6 +374,23 @@ export class PdfPreview extends Disposable {
       vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('pdf-preview.reload.debounceMs')) {
           this.reloadDebounceMs = readReloadDebounceMs();
+        }
+        if (event.affectsConfiguration('pdf-preview.reload.automatic')) {
+          this.automaticReload = readAutomaticReload(this.resource);
+          const message: HostToViewerMessage = {
+            type: 'auto-reload-state',
+            enabled: this.automaticReload,
+          };
+          void this.webviewEditor.webview.postMessage(message);
+        }
+        if (event.affectsConfiguration('pdf-preview.copy.autoCopySelection')) {
+          const message: HostToViewerMessage = {
+            type: 'copy-auto-selection-state',
+            enabled: vscode.workspace
+              .getConfiguration('pdf-preview', this.resource)
+              .get<boolean>('copy.autoCopySelection', false),
+          };
+          void this.webviewEditor.webview.postMessage(message);
         }
       }),
     );
@@ -382,6 +411,18 @@ export class PdfPreview extends Disposable {
             break;
           case 'print-request':
             void printPdf(this.resource);
+            break;
+          case 'set-auto-reload': {
+            const target = vscode.workspace.workspaceFolders?.length
+              ? vscode.ConfigurationTarget.Workspace
+              : vscode.ConfigurationTarget.Global;
+            void vscode.workspace
+              .getConfiguration('pdf-preview', this.resource)
+              .update('reload.automatic', parsedMessage.enabled, target);
+            break;
+          }
+          case 'copy-text':
+            void vscode.env.clipboard.writeText(parsedMessage.text);
             break;
           case 'open-pdf-link':
             void this.openPdfLink(parsedMessage.href);
@@ -422,12 +463,16 @@ export class PdfPreview extends Disposable {
     );
     this._register(
       watcher.onDidChange(() => {
-        this.scheduleReload();
+        if (this.automaticReload) {
+          this.scheduleReload();
+        }
       }),
     );
     this._register(
       watcher.onDidCreate(() => {
-        this.scheduleReload();
+        if (this.automaticReload) {
+          this.scheduleReload();
+        }
       }),
     );
     this._register(
@@ -562,6 +607,13 @@ export class PdfPreview extends Disposable {
       },
       reload: {
         debounceMs: this.reloadDebounceMs,
+        automatic: this.automaticReload,
+      },
+      copy: {
+        autoCopySelection: pdfConfig.get<boolean>(
+          'copy.autoCopySelection',
+          false,
+        ),
       },
       initialViewState: persistedViewStateOrUndefined(
         this.workspaceState.get(viewStateKey(this.resource)),

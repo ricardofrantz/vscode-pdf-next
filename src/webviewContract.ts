@@ -21,15 +21,19 @@ export type ViewerToHostMessage =
         | 'dark-pages'
         | 'inverted';
     }
+  | { type: 'copy-text'; text: string }
   | { type: 'open-external' }
   | { type: 'open-pdf-link'; href: string }
   | { type: 'open-source' }
   | { type: 'print-request' }
+  | { type: 'set-auto-reload'; enabled: boolean }
   | { type: 'view-state'; state: PersistedViewState }
   | { type: 'viewer-ready'; pagesCount: number; pageNumber: number }
   | { type: 'viewer-error'; message: string };
 
 export type HostToViewerMessage =
+  | { type: 'auto-reload-state'; enabled: boolean }
+  | { type: 'copy-auto-selection-state'; enabled: boolean }
   | { type: 'file-deleted' }
   | { type: 'reload' }
   | { type: 'reset-view-state' };
@@ -121,6 +125,26 @@ export function parseViewerToHostMessage(
     case 'print-request':
       if (hasExpectedKeys(message, ['type'])) {
         return { type: 'print-request' };
+      }
+      break;
+
+    case 'set-auto-reload':
+      if (
+        hasExpectedKeys(message, ['type', 'enabled']) &&
+        typeof message.enabled === 'boolean'
+      ) {
+        return { type: 'set-auto-reload', enabled: message.enabled };
+      }
+      break;
+
+    case 'copy-text':
+      if (
+        hasExpectedKeys(message, ['type', 'text']) &&
+        typeof message.text === 'string' &&
+        message.text.length > 0 &&
+        message.text.length <= 1_000_000
+      ) {
+        return { type: 'copy-text', text: message.text };
       }
       break;
 

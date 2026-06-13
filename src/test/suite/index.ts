@@ -55,6 +55,45 @@ function assertWebviewContract(): void {
     undefined,
   );
   assert.deepStrictEqual(
+    parseViewerToHostMessage({ type: 'set-auto-reload', enabled: false }),
+    { type: 'set-auto-reload', enabled: false },
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({ type: 'set-auto-reload', enabled: 'false' }),
+    undefined,
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'set-auto-reload',
+      enabled: false,
+      extra: true,
+    }),
+    undefined,
+  );
+  assert.deepStrictEqual(
+    parseViewerToHostMessage({ type: 'copy-text', text: 'selected text' }),
+    { type: 'copy-text', text: 'selected text' },
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({ type: 'copy-text', text: '' }),
+    undefined,
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'copy-text',
+      text: 'x'.repeat(1_000_001),
+    }),
+    undefined,
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'copy-text',
+      text: 'selected text',
+      extra: true,
+    }),
+    undefined,
+  );
+  assert.deepStrictEqual(
     parseViewerToHostMessage({
       type: 'open-pdf-link',
       href: 'link-target.pdf#page=2',
@@ -522,6 +561,14 @@ export async function run(): Promise<void> {
     .getConfiguration('pdf-preview')
     .get<number>('reload.debounceMs');
   assert.strictEqual(debounceMs, 800);
+  const automaticReload = vscode.workspace
+    .getConfiguration('pdf-preview')
+    .get<boolean>('reload.automatic');
+  assert.strictEqual(automaticReload, true);
+  const autoCopySelection = vscode.workspace
+    .getConfiguration('pdf-preview')
+    .get<boolean>('copy.autoCopySelection');
+  assert.strictEqual(autoCopySelection, false);
 
   const theme = vscode.workspace
     .getConfiguration('pdf-preview')
@@ -556,6 +603,7 @@ export async function run(): Promise<void> {
     'pdf-preview.default.spreadMode',
     'pdf-preview.appearance.theme',
     'pdf-preview.appearance.pageGap',
+    'pdf-preview.copy.autoCopySelection',
     'pdf-preview.printCommand',
   ];
   for (const setting of resourceScopedSettings) {
@@ -581,8 +629,10 @@ export async function run(): Promise<void> {
       'pdf-preview.default.spreadMode': 'none',
       'pdf-preview.reload.closeOnDelete': false,
       'pdf-preview.reload.debounceMs': 800,
+      'pdf-preview.reload.automatic': true,
       'pdf-preview.appearance.theme': 'auto',
       'pdf-preview.appearance.pageGap': 'normal',
+      'pdf-preview.copy.autoCopySelection': false,
       'pdf-preview.printCommand': '',
     },
   );
@@ -696,6 +746,36 @@ export async function run(): Promise<void> {
   );
   assert.match(
     webviewSourceText,
+    /<button id="autoReloadToggle"[^>]*title="Disable automatic reload"[^>]*aria-label="Disable automatic reload"[^>]*aria-pressed="true"[^>]*>[\s\S]*?<use href="#icon-refresh"\/>[\s\S]*?<span class="label">Auto<\/span>/,
+    'Auto-reload toggle must expose a pressed state next to the reload button.',
+  );
+  assert.match(
+    webviewSourceText,
+    /case ['"]set-auto-reload['"]:[\s\S]*?update\([\s\S]*?['"]reload\.automatic['"][\s\S]*?parsedMessage\.enabled[\s\S]*?workspaceFolders[\s\S]*?ConfigurationTarget\.Workspace[\s\S]*?ConfigurationTarget\.Global/s,
+    'Auto-reload toggle messages must persist to workspace settings when a workspace is open.',
+  );
+  assert.match(
+    webviewSourceText,
+    /case ['"]copy-text['"]:[\s\S]*?vscode\.env\.clipboard\.writeText\(parsedMessage\.text\)/,
+    'Copy text messages must write through the host clipboard API.',
+  );
+  assert.match(
+    webviewSourceText,
+    /affectsConfiguration\(['"]pdf-preview\.reload\.automatic['"]\)[\s\S]*?auto-reload-state/,
+    'Reload automatic setting changes must be broadcast to open webviews.',
+  );
+  assert.match(
+    webviewSourceText,
+    /affectsConfiguration\(['"]pdf-preview\.copy\.autoCopySelection['"]\)[\s\S]*?copy-auto-selection-state/,
+    'Auto-copy setting changes must be broadcast to open webviews.',
+  );
+  assert.match(
+    webviewSourceText,
+    /watcher\.onDidChange\(\(\) => {[\s\S]*?if \(this\.automaticReload\)[\s\S]*?this\.scheduleReload\(\)/,
+    'PDF change watcher must gate auto reload through the automaticReload setting.',
+  );
+  assert.match(
+    webviewSourceText,
     /<div class="viewer-region">\s*<div id="viewerContainer" role="main" tabindex="0">/,
     'PDF.js 5 requires the viewer container option to be an absolutely positioned DIV element.',
   );
@@ -713,6 +793,7 @@ export async function run(): Promise<void> {
     'outlineToggle',
     'print',
     'reload',
+    'autoReloadToggle',
     'openSource',
   ];
   const iconOnlyButtons = ['zoomOut', 'zoomIn'];
@@ -1082,7 +1163,57 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /event\.data\?\.type === ['"]reset-view-state['"][\s\S]*?this\.resetViewState\(\)/,
+    /autoReloadToggle\.addEventListener\(['"]click['"][\s\S]*?type: ['"]set-auto-reload['"][\s\S]*?enabled: !this\.automaticReload/s,
+    'Auto-reload toolbar toggle must persist the next boolean state.',
+  );
+  assert.match(
+    viewerScriptText,
+    /type === ['"]auto-reload-state['"][\s\S]*?this\.setAutoReload\(message\.enabled\)/,
+    'Viewer must apply host auto-reload-state messages.',
+  );
+  assert.match(
+    viewerScriptText,
+    /type === ['"]copy-auto-selection-state['"][\s\S]*?this\.setAutoCopySelection\(message\.enabled\)/,
+    'Viewer must apply host copy-auto-selection-state messages without reopening the preview.',
+  );
+  assert.match(
+    viewerScriptText,
+    /const HOST_MESSAGE_TYPES = new Set\(\[[\s\S]*?['"]copy-auto-selection-state['"][\s\S]*?\]\)/,
+    'Viewer must validate copy-auto-selection-state host messages before dispatching.',
+  );
+  assert.match(
+    viewerScriptText,
+    /function isTrustedHostMessage\(event\)[\s\S]*?event\.origin === window\.location\.origin[\s\S]*?event\.source === window\.parent/,
+    'Viewer must reject message events not sent from the extension host.',
+  );
+  assert.match(
+    viewerScriptText,
+    /const HOST_MESSAGE_TYPES = new Set\(\[[\s\S]*?['"]auto-reload-state['"][\s\S]*?\]\)/,
+    'Viewer must validate host message types before dispatching.',
+  );
+  assert.match(
+    viewerScriptText,
+    /function selectedTextFromTextLayer\(\)[\s\S]*?commonAncestorContainer[\s\S]*?closest\(['"]\.textLayer['"]\)/,
+    'Text-copy helpers must only accept selections inside PDF.js text layers.',
+  );
+  assert.match(
+    viewerScriptText,
+    /key === ['"]c['"][\s\S]*?selectedTextFromTextLayer\(\)[\s\S]*?type: ['"]copy-text['"]/,
+    'Viewer must route text-layer Cmd/Ctrl+C through the host clipboard.',
+  );
+  assert.match(
+    viewerScriptText,
+    /function shouldHandlePdfTextCopy\(\)[\s\S]*?document\.activeElement[\s\S]*?matches\(['"]input, textarea, \[contenteditable\]['"]\)[\s\S]*?return false[\s\S]*?selectedTextFromTextLayer\(\)[\s\S]*?text\.length <= COPY_TEXT_MAX_LENGTH/,
+    'PDF text copy interception must not steal copy from focused inputs and must respect the host length cap.',
+  );
+  assert.match(
+    viewerScriptText,
+    /document\.addEventListener\(['"]mouseup['"][\s\S]*?this\.config\.copy\?\.autoCopySelection[\s\S]*?shouldHandlePdfTextCopy\(\)[\s\S]*?type: ['"]copy-text['"]/,
+    'Auto-copy-on-selection must trigger from document mouseup so edge releases are handled.',
+  );
+  assert.match(
+    viewerScriptText,
+    /message\.type === ['"]reset-view-state['"][\s\S]*?this\.resetViewState\(\)/,
     'Reset view state command must notify the active viewer.',
   );
   assert.match(
