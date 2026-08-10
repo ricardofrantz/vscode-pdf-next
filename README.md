@@ -24,11 +24,11 @@ viewing, predictable reload behavior, and a small packaged runtime.
 
 ### From Marketplace or Open VSX
 
-Once published, install `ricardofrantz.pdf-preview-next` from the VS Code
-Marketplace or Open VSX. In VS Code, run:
+Install `RicardoFrantz.pdf-preview-next` from the VS Code Marketplace or Open
+VSX. In VS Code, run:
 
 ```bash
-code --install-extension ricardofrantz.pdf-preview-next
+code --install-extension RicardoFrantz.pdf-preview-next
 ```
 
 ### From a VSIX release
@@ -45,6 +45,43 @@ To make VS Code use this viewer for PDFs:
 "workbench.editorAssociations": {
   "*.pdf": "pdf-preview-next.preview"
 }
+```
+
+## Releasing (automatic Marketplace publish)
+
+Pushing a version tag publishes automatically via GitHub Actions:
+
+1. Bump `version` in `package.json` and update `CHANGELOG.md`.
+2. Commit on `main`, then tag and push:
+
+   ```bash
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
+   ```
+
+3. The **Release** workflow verifies, packages the VSIX, creates/updates the
+   GitHub Release, then publishes to:
+   - VS Code Marketplace (`VSCE_PAT` secret — required)
+   - Open VSX (`OVSX_PAT` secret — optional)
+
+Manual dry-run (no publish): **Actions → Release → Run workflow** with
+`dry_run=true`. Manual publish without a new tag: `dry_run=false` and
+`confirm_publish=publish vX.Y.Z`.
+
+### Secrets
+
+| Secret     | Where                                              | Purpose                          |
+| ---------- | -------------------------------------------------- | -------------------------------- |
+| `VSCE_PAT` | Repo or `marketplace-publish` environment          | Marketplace Manage scope PAT     |
+| `OVSX_PAT` | Repo or `marketplace-publish` environment          | Open VSX personal access token   |
+
+Create the Azure DevOps PAT with **Marketplace → Manage**, organization
+**All accessible organizations**, then:
+
+```bash
+gh secret set VSCE_PAT -R ricardofrantz/vscode-pdf-next
+# optional:
+gh secret set OVSX_PAT -R ricardofrantz/vscode-pdf-next
 ```
 
 ## Settings

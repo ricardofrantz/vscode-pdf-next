@@ -15,7 +15,7 @@ on:
         type: boolean
         default: true
       confirm_publish:
-        description: Type "publish <tag>" to allow GitHub Release, Marketplace, and Open VSX publishing when dry_run is false.
+        description: Type "publish <tag>" to allow GitHub Release, Marketplace, and Open VSX publishing when dry_run is false (workflow_dispatch only).
         required: false
         default: ''
 
@@ -35,6 +35,7 @@ jobs:
     timeout-minutes: 25
     outputs:
       tag_commit: ${{ steps.validate_release.outputs.tag_commit }}
+      should_publish: ${{ steps.publish_gate.outputs.should_publish }}
 
     steps:
       - name: Check out release tag
@@ -73,6 +74,21 @@ jobs:
           fi
           echo "tag_commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
 
+      - name: Decide whether to publish registries
+        id: publish_gate
+        run: |
+          SHOULD_PUBLISH=false
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # Version tags publish automatically after verification.
+            SHOULD_PUBLISH=true
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+            && [ "${{ inputs.dry_run }}" = "false" ] \
+            && [ "${{ inputs.confirm_publish }}" = "publish ${{ inputs.release_tag }}" ]; then
+            SHOULD_PUBLISH=true
+          fi
+          echo "should_publish=$SHOULD_PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "should_publish=$SHOULD_PUBLISH"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -92,23 +108,31 @@ jobs:
 
       - name: Audit production dependencies
         run: |
+          # This extension ships with no runtime npm dependencies (viewer assets are vendored).
+          # Do not fail the release on advisories that only affect publish/dev tooling (@vscode/vsce, eslint, …).
+          HAS_PROD="$(node -p "const d=require('./package.json').dependencies||{}; Object.keys(d).length > 0 ? 'yes' : 'no'")"
+          if [ "$HAS_PROD" = "no" ]; then
+            echo "No production dependencies declared; skipping production audit."
+            exit 0
+          fi
           mkdir -p audit-prod
           cp package.json bun.lock audit-prod/
           cd audit-prod
           bun install --frozen-lockfile --production
           bun audit --audit-level=high
 
-      - name: Upload VSIX artifact for guarded publishing
+      - name: Upload VSIX artifact for publishing
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pdf-preview-next-vsix
           path: pdf-preview-next-*.vsix
           if-no-files-found: error
 
-      - name: Note release verification-only run
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run == true || inputs.confirm_publish != format('publish {0}', inputs.release_tag) }}
+      - name: Note verification-only run
+        if: ${{ steps.publish_gate.outputs.should_publish != 'true' }}
         run: |
           echo "Verification completed for $RELEASE_TAG; GitHub Release and registry publishing were skipped."
+          echo "Tag pushes publish automatically. Manual publish: dry_run=false and confirm_publish='publish $RELEASE_TAG'."
 
   missing-publish-confirmation:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == false && inputs.confirm_publish != format('publish {0}', inputs.release_tag) }}
@@ -122,16 +146,16 @@ jobs:
           exit 1
 
   publish:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == false && inputs.confirm_publish == format('publish {0}', inputs.release_tag) }}
+    if: ${{ needs.release.outputs.should_publish == 'true' }}
     needs: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write
-    # Configure this environment with required reviewers in GitHub repository settings.
+    # Optional: add required reviewers on this environment for extra gatekeeping.
     environment:
       name: marketplace-publish
-      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ inputs.release_tag }}
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
     steps:
       - name: Check out verified release commit
@@ -194,8 +218,8 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
           if [ -z "$VSCE_PAT" ]; then
-            echo "VS Code Marketplace publish skipped: VSCE_PAT is not configured."
-            exit 0
+            echo "::error::VSCE_PAT is not configured. Add a Marketplace Manage PAT as a repository or marketplace-publish environment secret named VSCE_PAT."
+            exit 1
           fi
           VSIX="$(ls pdf-preview-next-*.vsix | head -n 1)"
           ./node_modules/.bin/vsce publish --packagePath "$VSIX" -p "$VSCE_PAT"
@@ -205,7 +229,7 @@ jobs:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: |
           if [ -z "$OVSX_PAT" ]; then
-            echo "Open VSX publish skipped: OVSX_PAT is not configured."
+            echo "Open VSX publish skipped: OVSX_PAT is not configured (optional)."
             exit 0
           fi
           VSIX="$(ls pdf-preview-next-*.vsix | head -n 1)"

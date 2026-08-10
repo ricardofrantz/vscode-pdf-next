@@ -4,7 +4,7 @@
   "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with PDF.js 5, live reload, search, outline, dark modes, and reliable preview state.",
   "version": "2.1.0",
   "packageManager": "bun@1.3.13",
-  "publisher": "ricardofrantz",
+  "publisher": "RicardoFrantz",
   "engines": {
     "vscode": "^1.95.0",
     "node": ">=22"

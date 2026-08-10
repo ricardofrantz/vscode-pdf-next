@@ -106,7 +106,11 @@ Check for shell injection, webview XSS sinks, workspace trust bypasses, unsafe P
 - No scratch files, VSIX artifacts, logs, `.work/` outputs, `.vscode-test/`, `out/`, or `dist/` surprises are staged unless expected.
 - `bun run test` and package scan pass.
 - Locally installed VSIX has been smoke-tested.
-- Release workflow is run first as dry-run unless the exact same commit was already validated.
+- Optional: dry-run the Release workflow before cutting a public release.
+- Push `vX.Y.Z` to publish automatically (GitHub Release + Marketplace + optional Open VSX).
+- Ensure `VSCE_PAT` is configured; `OVSX_PAT` is optional.
+- Keep third-party actions SHA-pinned. Tag pushes publish after verify; manual
+  `workflow_dispatch` still requires `dry_run=false` and `confirm_publish=publish vX.Y.Z`.
 
 ## Non-goals for maintenance
 
