@@ -92,20 +92,43 @@ function newestVsix() {
   return candidates[0]?.path;
 }
 
+// unzip is standard on the Linux CI runners; Windows 10+ ships bsdtar as
+// tar.exe, which reads zip archives. Both tools receive only local file paths
+// and archive entry names, never untrusted arguments.
+function hasUnzip() {
+  try {
+    execFileSync('unzip', ['-v'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const useUnzip = hasUnzip();
+
 function readVsixEntries(vsixPath) {
-  return execFileSync('unzip', ['-Z1', vsixPath], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-    .split(/\r?\n/)
-    .filter(Boolean);
+  const output = useUnzip
+    ? execFileSync('unzip', ['-Z1', vsixPath], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    : execFileSync('tar', ['-tf', vsixPath], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+  return output.split(/\r?\n/).filter(Boolean);
 }
 
 function readVsixEntry(vsixPath, entry) {
-  return execFileSync('unzip', ['-p', vsixPath, entry], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  return useUnzip
+    ? execFileSync('unzip', ['-p', vsixPath, entry], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      })
+    : execFileSync('tar', ['-xOf', vsixPath, entry], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
 }
 
 function main() {

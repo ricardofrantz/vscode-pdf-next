@@ -10,10 +10,13 @@ const buildOptions = {
   external: ['vscode'],
   format: 'cjs',
   platform: 'node',
-  target: 'node22',
+  target: 'node20',
   outfile: 'dist/extension.js',
   sourcemap: production ? false : 'external',
   sourcesContent: false,
+  // Keep the host bundle readable: the release scanner (tools/scan_vsix.mjs)
+  // verifies behavioral source patterns inside the packaged VSIX, which
+  // minification would defeat. The bundle is ~43KB in a multi-MB package.
   minify: false,
   logLevel: 'info',
 };

@@ -24,10 +24,14 @@ function repoPath(relativePath) {
 }
 
 function run(command, args) {
+  // On Windows, npm is npm.cmd and Node blocks .cmd execution without a
+  // shell. Arguments here are repo-pinned constants from update_pdfjs.jsonc,
+  // never untrusted input, so shell resolution is safe.
   return execFileSync(command, args, {
     cwd: repoRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
+    shell: process.platform === 'win32',
   });
 }
 

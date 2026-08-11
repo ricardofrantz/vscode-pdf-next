@@ -1,12 +1,12 @@
 {
-  // Source package pinned for the PDF.js 5 migration.
+  // Source package pinned for the PDF.js 6 line.
   "packageName": "pdfjs-dist",
-  "version": "5.6.205",
-  "integrity": "sha512-tlUj+2IDa7G1SbvBNN74UHRLJybZDWYom+k6p5KIZl7huBvsA4APi6mKL+zCxd3tLjN5hOOEE9Tv7VdzO88pfg==",
+  "version": "6.2.108",
+  "integrity": "sha512-YxFb+SQcodN2rnX9Tn3dHYlqfb7NjlzzfONPpJd+AKoKtUjEdevTfbC07d5TcczzOK6261auRkP/M8OBHs9vFQ==",
 
   // Keep downloads/extraction inside the ignored workspace folder.
-  "workDirectory": ".work/pdfjs-dist-5.6.205",
-  "sourceDirectory": ".work/pdfjs-dist-5.6.205/package",
+  "workDirectory": ".work/pdfjs-dist-6.2.108",
+  "sourceDirectory": ".work/pdfjs-dist-6.2.108/package",
 
   // Old PDF.js 3 layout plus the regenerated PDF.js 5 tree.
   "remove": ["lib/pdfjs", "lib/build", "lib/web", "lib/LICENSE"],

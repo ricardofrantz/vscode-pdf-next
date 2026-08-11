@@ -133,6 +133,19 @@ the webview HTML construction and message channel.
 - No secrets, tokens, or API keys in source.
 - No GitHub Actions workflows present, so no workflow-injection surface.
 
-**Status.** Webview hardening and the PDF.js 5 runtime migration have landed.
-The v1.4 webview CSP now avoids inline styles and WebAssembly execution
-permission; PDF.js runs with JavaScript evaluation and WASM disabled.
+**Status.** Webview hardening and the PDF.js 5 runtime migration landed in
+v1.4; PDF.js ran with JavaScript evaluation and WASM disabled.
+
+**Update (2026-08).** The vendored runtime is now `pdfjs-dist@6.2.108`.
+PDF.js 6 removed its eval-based font/PostScript code paths upstream, and the
+release compat check (`tools/check_pdfjs_runtime_compat.mjs`) now asserts that
+no `eval(` or `new Function(` exists anywhere in the vendored core, worker, or
+viewer bundles — a stronger guarantee than the removed `isEvalSupported`
+flag. PDF parsing runs in a real Web Worker (the webview never statically
+imports the worker bundle onto the main thread), and the integration tests
+assert the real worker spawns via the `viewer-ready` event's `workerType`
+field. WASM execution remains disabled (`useWasm: false` with the OpenJPEG
+JavaScript fallback). Document bytes now travel from the extension host to
+the viewer over the webview message channel, so `localResourceRoots` is
+restricted to the extension directory alone — the webview can no longer load
+anything from the opened PDF's directory.

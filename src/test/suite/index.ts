@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { disposeAll } from '../../disposable';
 import { PDF_WEBVIEW_OPTIONS } from '../../extension';
@@ -113,6 +114,15 @@ function assertWebviewContract(): void {
     undefined,
   );
   assert.deepStrictEqual(
+    parseViewerToHostMessage({ type: 'request-document', requestId: 3 }),
+    { type: 'request-document', requestId: 3 },
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({ type: 'request-document', requestId: 0 }),
+    undefined,
+    'request-document requires a positive integer requestId',
+  );
+  assert.deepStrictEqual(
     parseViewerToHostMessage({
       type: 'appearance-theme',
       theme: 'night',
@@ -160,8 +170,53 @@ function assertWebviewContract(): void {
       type: 'viewer-ready',
       pagesCount: 3,
       pageNumber: 2,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
     }),
-    { type: 'viewer-ready', pagesCount: 3, pageNumber: 2 },
+    {
+      type: 'viewer-ready',
+      pagesCount: 3,
+      pageNumber: 2,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
+    },
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'viewer-ready',
+      pagesCount: 3,
+      pageNumber: 2,
+      durationMs: 1200,
+      fetchMs: 300,
+    }),
+    undefined,
+    'viewer-ready without workerType must be rejected',
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'viewer-ready',
+      pagesCount: 3,
+      pageNumber: 2,
+      workerType: 'gpu',
+      durationMs: 1200,
+      fetchMs: 300,
+    }),
+    undefined,
+    'viewer-ready with unknown workerType must be rejected',
+  );
+  assert.strictEqual(
+    parseViewerToHostMessage({
+      type: 'viewer-ready',
+      pagesCount: 3,
+      pageNumber: 2,
+      workerType: 'worker',
+      durationMs: -5,
+      fetchMs: 300,
+    }),
+    undefined,
+    'viewer-ready with negative durationMs must be rejected',
   );
   assert.deepStrictEqual(
     parseViewerToHostMessage({ type: 'viewer-error', message: 'failed' }),
@@ -172,6 +227,9 @@ function assertWebviewContract(): void {
       type: 'viewer-ready',
       pagesCount: 0,
       pageNumber: 1,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
     }),
     undefined,
   );
@@ -180,6 +238,9 @@ function assertWebviewContract(): void {
       type: 'viewer-ready',
       pagesCount: 1,
       pageNumber: 1,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
       extra: true,
     }),
     undefined,
@@ -220,9 +281,16 @@ function assertWebviewContract(): void {
 
 function assertLinkAndPrintHelpers(): void {
   const source = vscode.Uri.file('/workspace/docs/source.pdf');
+  const sourceDir = path.dirname(source.fsPath);
   const target = resolvePdfLinkTarget(source, 'link-target.pdf#page=2');
   assert.ok(target, 'Relative PDF target should resolve.');
-  assert.strictEqual(target.fsPath, '/workspace/docs/link-target.pdf');
+  // resolvePdfLinkTarget resolves through node's path module (which on
+  // Windows adds the current drive to drive-less absolute paths) and returns
+  // a vscode.Uri (which lower-cases drive letters); build the expectation
+  // through the same primitives so the assertion is platform-correct.
+  const expectedFsPath = (...segments: string[]): string =>
+    vscode.Uri.file(path.resolve(sourceDir, ...segments)).fsPath;
+  assert.strictEqual(target.fsPath, expectedFsPath('link-target.pdf'));
   assert.strictEqual(target.fragment, 'page=2');
 
   const spacedTarget = resolvePdfLinkTarget(
@@ -232,7 +300,7 @@ function assertLinkAndPrintHelpers(): void {
   assert.ok(spacedTarget, 'Encoded PDF target should resolve.');
   assert.strictEqual(
     spacedTarget.fsPath,
-    '/workspace/docs/nested/linked target.PDF',
+    expectedFsPath('nested', 'linked target.PDF'),
   );
   assert.strictEqual(spacedTarget.fragment, 'nameddest=Figure1');
 
@@ -266,12 +334,10 @@ function assertLinkAndPrintHelpers(): void {
 
 function assertWebviewHtmlHooks(): void {
   const extensionRoot = vscode.Uri.parse('file:///extension');
-  const resource = vscode.Uri.parse('file:///workspace/docs/paper.pdf');
   assert.deepStrictEqual(
-    webviewLocalResourceRoots(extensionRoot, resource).map((uri) =>
-      uri.toString(),
-    ),
-    ['file:///extension', 'file:///workspace/docs'],
+    webviewLocalResourceRoots(extensionRoot).map((uri) => uri.toString()),
+    ['file:///extension'],
+    'Webview must only load resources from the extension: document bytes travel over postMessage.',
   );
 
   assert.match(
@@ -329,32 +395,26 @@ function assertWebviewHtmlHooks(): void {
 }
 
 function assertDisposeAllKeepsDraining(): void {
+  // The behavioral contract: a throwing dispose() must not stop the drain or
+  // leave entries behind. The error is reported via console.error, but that
+  // is deliberately not asserted: the VS Code extension host patches the
+  // console differently per platform, and intercepting it is unreliable on
+  // Windows.
   const disposed: string[] = [];
-  const errors: unknown[][] = [];
-  const originalConsoleError = console.error;
-  console.error = (...args: unknown[]): void => {
-    errors.push(args);
-  };
-
-  try {
-    const disposables: vscode.Disposable[] = [
-      { dispose: () => disposed.push('first') },
-      {
-        dispose: () => {
-          throw new Error('dispose failed');
-        },
+  const disposables: vscode.Disposable[] = [
+    { dispose: () => disposed.push('first') },
+    {
+      dispose: () => {
+        throw new Error('dispose failed');
       },
-      { dispose: () => disposed.push('third') },
-    ];
+    },
+    { dispose: () => disposed.push('third') },
+  ];
 
-    disposeAll(disposables);
+  disposeAll(disposables);
 
-    assert.deepStrictEqual(disposed, ['third', 'first']);
-    assert.deepStrictEqual(disposables, []);
-    assert.strictEqual(errors.length, 1);
-  } finally {
-    console.error = originalConsoleError;
-  }
+  assert.deepStrictEqual(disposed, ['third', 'first']);
+  assert.deepStrictEqual(disposables, []);
 }
 
 async function assertViewStateResetHelper(): Promise<void> {
@@ -655,15 +715,28 @@ export async function run(): Promise<void> {
     'pdf-preview.refreshPreview',
     'pdf-preview.resetViewState',
   ]);
-  assert.deepStrictEqual([...extension.packageJSON.activationEvents].sort(), [
-    'onCommand:pdf-preview.openPreview',
-    'onCommand:pdf-preview.openSource',
-    'onCommand:pdf-preview.print',
-    'onCommand:pdf-preview.printDirect',
-    'onCommand:pdf-preview.refreshPreview',
-    'onCommand:pdf-preview.resetViewState',
-    'onCustomEditor:pdf-preview-next.preview',
-  ]);
+  // activationEvents is not declared in package.json: VS Code >= 1.74
+  // generates onCommand/onCustomEditor events from the contributes section.
+  // At runtime the scanner exposes the generated events on packageJSON; when
+  // present they must still cover the custom editor and every command.
+  const activationEvents: string[] | undefined =
+    extension.packageJSON.activationEvents;
+  if (activationEvents !== undefined) {
+    for (const expectedEvent of [
+      'onCommand:pdf-preview.openPreview',
+      'onCommand:pdf-preview.openSource',
+      'onCommand:pdf-preview.print',
+      'onCommand:pdf-preview.printDirect',
+      'onCommand:pdf-preview.refreshPreview',
+      'onCommand:pdf-preview.resetViewState',
+      'onCustomEditor:pdf-preview-next.preview',
+    ]) {
+      assert.ok(
+        activationEvents.includes(expectedEvent),
+        `Generated activation events must include ${expectedEvent}.`,
+      );
+    }
+  }
   const commandTitles = new Map(
     extension.packageJSON.contributes.commands.map(
       ({ command, title }: { command: string; title: string }) => [
@@ -751,7 +824,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     webviewSourceText,
-    /case ['"]set-auto-reload['"]:[\s\S]*?update\([\s\S]*?['"]reload\.automatic['"][\s\S]*?parsedMessage\.enabled[\s\S]*?workspaceFolders[\s\S]*?ConfigurationTarget\.Workspace[\s\S]*?ConfigurationTarget\.Global/s,
+    /case ['"]set-auto-reload['"]:[\s\S]*?workspaceFolders[\s\S]*?ConfigurationTarget\.Workspace[\s\S]*?ConfigurationTarget\.Global[\s\S]*?update\(['"]reload\.automatic['"],\s*parsedMessage\.enabled,\s*target\)/s,
     'Auto-reload toggle messages must persist to workspace settings when a workspace is open.',
   );
   assert.match(
@@ -777,7 +850,7 @@ export async function run(): Promise<void> {
   assert.match(
     webviewSourceText,
     /<div class="viewer-region">\s*<div id="viewerContainer" role="main" tabindex="0">/,
-    'PDF.js 5 requires the viewer container option to be an absolutely positioned DIV element.',
+    'PDF.js requires the viewer container option to be an absolutely positioned DIV element.',
   );
   assert.doesNotMatch(webviewSourceText, /<main id="viewerContainer"/);
 
@@ -982,7 +1055,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /if \(pdfDocument\.numPages < 1\) {\s*await pdfDocument\.destroy\(\);\s*throw new Error\('PDF has no pages\.'\);/s,
+    /if \(pdfDocument\.numPages < 1\) {\s*await pdfDocument\.destroy\(\);[\s\S]*?throw new Error\('PDF has no pages\.'\);/s,
     'Broken fixtures should surface a load error without waiting for page render timeout.',
   );
   assert.match(
@@ -1086,38 +1159,54 @@ export async function run(): Promise<void> {
   const pdfCoreImportIndex = viewerScriptText.indexOf(
     "import * as pdfjsLib from './pdfjs/build/pdf.min.mjs';",
   );
-  const pdfWorkerImportIndex = viewerScriptText.indexOf(
-    "import * as pdfjsWorker from './pdfjs/build/pdf.worker.min.mjs';",
-  );
   const viewerImportIndex = viewerScriptText.indexOf(
     "await import('./pdfjs/web/pdf_viewer.mjs')",
   );
   assert.ok(polyfillsImportIndex >= 0, 'PDF.js polyfills must load first.');
   assert.ok(pdfCoreImportIndex >= 0, 'PDF.js core must load first.');
-  assert.ok(pdfWorkerImportIndex >= 0, 'PDF.js worker module must load.');
   assert.ok(
     polyfillsImportIndex < pdfCoreImportIndex,
     'PDF.js polyfills must evaluate before PDF.js core.',
   );
   assert.ok(
-    pdfWorkerImportIndex > pdfCoreImportIndex,
-    'PDF.js worker module must load after PDF.js core.',
-  );
-  assert.ok(
-    viewerImportIndex > pdfWorkerImportIndex,
-    'PDF.js viewer must load after the worker module is exposed.',
+    viewerImportIndex > pdfCoreImportIndex,
+    'PDF.js viewer must load after PDF.js core is exposed.',
   );
   assert.ok(
     polyfillsImportIndex < viewerImportIndex,
     'PDF.js polyfills must evaluate before PDF.js viewer.',
   );
   assert.match(viewerScriptText, /globalThis\.pdfjsLib = pdfjsLib/);
-  assert.match(viewerScriptText, /globalThis\.pdfjsWorker = pdfjsWorker/);
+  assert.ok(
+    !viewerScriptText.includes("from './pdfjs/build/pdf.worker.min.mjs'"),
+    'Viewer must not statically import the PDF.js worker bundle on the main thread.',
+  );
+  assert.doesNotMatch(
+    viewerScriptText,
+    /globalThis\.pdfjsWorker\s*=/,
+    'Viewer must not set globalThis.pdfjsWorker; it forces PDF.js into main-thread fake-worker mode.',
+  );
+  assert.match(
+    viewerScriptText,
+    /workerType:[\s\S]*?instanceof Worker[\s\S]*?\? 'worker'[\s\S]*?: 'fake'/,
+    'viewer-ready must report the worker mode so regressions to fake-worker are caught.',
+  );
   assert.doesNotMatch(
     viewerScriptText,
     /from '.\/pdfjs\/web\/pdf_viewer\.mjs'/,
   );
-  assert.match(viewerScriptText, /fetch\(this\.config\.path/);
+  // Document bytes come from the extension host over postMessage; a webview
+  // resource fetch stalls for many seconds on UNC/WSL-backed files.
+  assert.match(
+    viewerScriptText,
+    /vscode\.postMessage\(\{ type: 'request-document', requestId \}\)/,
+    'Viewer must request document bytes from the extension host.',
+  );
+  assert.doesNotMatch(
+    viewerScriptText,
+    /fetch\(this\.config\.path/,
+    'Viewer must not fetch the document through the webview resource layer.',
+  );
   assert.match(viewerScriptText, /data,\n\s+disableRange: true/);
   assert.match(viewerScriptText, /disableStream: true/);
   assert.doesNotMatch(viewerScriptText, /url: this\.config\.path/);
@@ -1153,8 +1242,13 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /cyclePageTheme\(\)\s*{[\s\S]*?this\.pdfViewer\.pageColors = pageColorsForTheme\(this\.appearance\.theme\);[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
-    'Theme cycle must preserve view state by reloading through the refresh path.',
+    /cyclePageTheme\(\)\s*{[\s\S]*?this\.applyPageColors\(pageColorsForTheme\(this\.appearance\.theme\)\)[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
+    'Theme cycle must re-render in place, falling back to a view-state-preserving reload.',
+  );
+  assert.match(
+    viewerScriptText,
+    /applyPageColors\(pageColors\)\s*{[\s\S]*?this\.pdfViewer\.pageColors = pageColors;[\s\S]*?pageView\.pageColors = pageColors;[\s\S]*?this\.pdfViewer\.refresh\(\);[\s\S]*?}/,
+    'Theme changes must update page colors on live page views and refresh without reparsing.',
   );
   assert.match(
     viewerScriptText,
@@ -1198,7 +1292,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /key === ['"]c['"][\s\S]*?selectedTextFromTextLayer\(\)[\s\S]*?type: ['"]copy-text['"]/,
+    /key === ['"]c['"][\s\S]*?shouldHandlePdfTextCopy\(\)[\s\S]*?type: ['"]copy-text['"]/,
     'Viewer must route text-layer Cmd/Ctrl+C through the host clipboard.',
   );
   assert.match(
@@ -1242,9 +1336,11 @@ export async function run(): Promise<void> {
     /openSourceForActivePreview\(\)[\s\S]*?preview\.openExternal\(\)/,
     'Open Source command should not bypass PdfPreview.openSource.',
   );
+  // TS CommonJS emit wraps imported calls as (0, print_1.printPdf)(...), so
+  // match the call site tolerantly.
   assert.match(
     providerSourceText,
-    /printPdf\(/,
+    /printPdf\)?\(preview\.resourceUri\)/,
     'Print command must dispatch through the host-side system-viewer print utility.',
   );
 
@@ -1261,7 +1357,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     printSourceText,
-    /openExternal\(resource\)/,
+    /env\.openExternal\(openTarget\)/,
     'Default print utility must open the system viewer.',
   );
   assert.match(
@@ -1271,7 +1367,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     printSourceText,
-    /spawn\(command, args, \{ stdio: \['ignore', 'pipe', 'pipe'\] \}\)/,
+    /spawn\)?\(command, args, \{ stdio: \['ignore', 'pipe', 'pipe'\] \}\)/,
     'Print utility must execute custom commands without a shell while capturing diagnostics.',
   );
   assert.match(
@@ -1406,6 +1502,20 @@ export async function run(): Promise<void> {
       'PDF.js runtime uses Uint8Array.prototype.toBase64, so the extension must ship the polyfill.',
     );
   }
+  if (pdfRuntimeSourceText.includes('toHex')) {
+    assert.match(
+      polyfillsScriptText,
+      /Uint8Array\.prototype\.toHex/,
+      'PDF.js runtime uses Uint8Array.prototype.toHex, so the extension must ship the polyfill.',
+    );
+  }
+  if (pdfRuntimeSourceText.includes('fromHex')) {
+    assert.match(
+      polyfillsScriptText,
+      /Uint8Array\.fromHex/,
+      'PDF.js runtime uses Uint8Array.fromHex, so the extension must ship the polyfill.',
+    );
+  }
 
   const fixtureUri = await writePdfFixture(extension);
   await vscode.commands.executeCommand(
@@ -1421,6 +1531,21 @@ export async function run(): Promise<void> {
   assert.strictEqual(viewerEvent.type, 'viewer-ready');
   assert.strictEqual(viewerEvent.pagesCount, 1);
   assert.strictEqual(viewerEvent.pageNumber, 1);
+  assert.strictEqual(
+    viewerEvent.workerType,
+    'worker',
+    'PDF.js must run in a real worker thread inside the webview; fake-worker mode parses PDFs on the UI thread.',
+  );
+  assert.ok(
+    Number.isInteger(viewerEvent.durationMs) && viewerEvent.durationMs >= 0,
+    'viewer-ready must carry a load duration for performance diagnostics.',
+  );
+  assert.ok(
+    Number.isInteger(viewerEvent.fetchMs) &&
+      viewerEvent.fetchMs >= 0 &&
+      viewerEvent.fetchMs <= viewerEvent.durationMs,
+    'viewer-ready must carry the resource fetch time within the total duration.',
+  );
 
   const reloadEvent = await assertFileWatcherReloadDoesNotStealFocus(
     fixtureUri,
@@ -1429,6 +1554,7 @@ export async function run(): Promise<void> {
   assert.strictEqual(reloadEvent.type, 'viewer-ready');
   assert.strictEqual(reloadEvent.pagesCount, 1);
   assert.strictEqual(reloadEvent.pageNumber, 1);
+  assert.strictEqual(reloadEvent.workerType, 'worker');
 
   return Promise.resolve();
 }

@@ -26,14 +26,28 @@ export type ViewerToHostMessage =
   | { type: 'open-pdf-link'; href: string }
   | { type: 'open-source' }
   | { type: 'print-request' }
+  | { type: 'request-document'; requestId: number }
   | { type: 'set-auto-reload'; enabled: boolean }
   | { type: 'view-state'; state: PersistedViewState }
-  | { type: 'viewer-ready'; pagesCount: number; pageNumber: number }
+  | {
+      type: 'viewer-ready';
+      pagesCount: number;
+      pageNumber: number;
+      workerType: 'worker' | 'fake';
+      durationMs: number;
+      fetchMs: number;
+    }
   | { type: 'viewer-error'; message: string };
 
 export type HostToViewerMessage =
   | { type: 'auto-reload-state'; enabled: boolean }
   | { type: 'copy-auto-selection-state'; enabled: boolean }
+  // The document bytes travel over postMessage instead of a webview resource
+  // fetch: the webview service worker cannot serve some filesystems the
+  // extension host reads fine (UNC/WSL shares, remote workspaces), and
+  // binary messages transfer efficiently.
+  | { type: 'document-data'; requestId: number; data: Uint8Array }
+  | { type: 'document-error'; requestId: number; message: string }
   | { type: 'file-deleted' }
   | { type: 'reload' }
   | { type: 'reset-view-state' };
@@ -44,6 +58,9 @@ export type ViewerEvent =
       resource: string;
       pagesCount: number;
       pageNumber: number;
+      workerType: 'worker' | 'fake';
+      durationMs: number;
+      fetchMs: number;
     }
   | { type: 'viewer-error'; resource: string; message: string };
 
@@ -128,6 +145,17 @@ export function parseViewerToHostMessage(
       }
       break;
 
+    case 'request-document':
+      if (
+        hasExpectedKeys(message, ['type', 'requestId']) &&
+        typeof message.requestId === 'number' &&
+        Number.isInteger(message.requestId) &&
+        message.requestId > 0
+      ) {
+        return { type: 'request-document', requestId: message.requestId };
+      }
+      break;
+
     case 'set-auto-reload':
       if (
         hasExpectedKeys(message, ['type', 'enabled']) &&
@@ -185,18 +213,35 @@ export function parseViewerToHostMessage(
 
     case 'viewer-ready':
       if (
-        hasExpectedKeys(message, ['type', 'pagesCount', 'pageNumber']) &&
+        hasExpectedKeys(message, [
+          'type',
+          'pagesCount',
+          'pageNumber',
+          'workerType',
+          'durationMs',
+          'fetchMs',
+        ]) &&
         typeof message.pagesCount === 'number' &&
         Number.isInteger(message.pagesCount) &&
         message.pagesCount > 0 &&
         typeof message.pageNumber === 'number' &&
         Number.isInteger(message.pageNumber) &&
-        message.pageNumber > 0
+        message.pageNumber > 0 &&
+        (message.workerType === 'worker' || message.workerType === 'fake') &&
+        typeof message.durationMs === 'number' &&
+        Number.isInteger(message.durationMs) &&
+        message.durationMs >= 0 &&
+        typeof message.fetchMs === 'number' &&
+        Number.isInteger(message.fetchMs) &&
+        message.fetchMs >= 0
       ) {
         return {
           type: 'viewer-ready',
           pagesCount: message.pagesCount,
           pageNumber: message.pageNumber,
+          workerType: message.workerType,
+          durationMs: message.durationMs,
+          fetchMs: message.fetchMs,
         };
       }
       break;

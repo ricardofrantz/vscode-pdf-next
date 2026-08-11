@@ -1,5 +1,4 @@
-5.6.205
-
-Source: pdfjs-dist@5.6.205
-Integrity: sha512-tlUj+2IDa7G1SbvBNN74UHRLJybZDWYom+k6p5KIZl7huBvsA4APi6mKL+zCxd3tLjN5hOOEE9Tv7VdzO88pfg==
-Runtime: vendored PDF.js ESM files under lib/pdfjs.
+Version: 6.2.108
+Source: pdfjs-dist@6.2.108
+Integrity: sha512-YxFb+SQcodN2rnX9Tn3dHYlqfb7NjlzzfONPpJd+AKoKtUjEdevTfbC07d5TcczzOK6261auRkP/M8OBHs9vFQ==
+Date: 2026-08-10T22:00:38.520Z

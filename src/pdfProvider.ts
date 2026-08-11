@@ -12,11 +12,14 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
   private lastViewerEvent: RecordedViewerEvent | undefined;
   private readonly viewerEventEmitter =
     new vscode.EventEmitter<RecordedViewerEvent>();
+  private readonly log: vscode.OutputChannel;
 
   constructor(
     private readonly extensionRoot: vscode.Uri,
     private readonly workspaceState: vscode.Memento,
-  ) {}
+  ) {
+    this.log = vscode.window.createOutputChannel('vscode-pdf Next');
+  }
 
   public openCustomDocument(uri: vscode.Uri): vscode.CustomDocument {
     return { uri, dispose: (): void => {} };
@@ -33,6 +36,9 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
       this.workspaceState,
       (event) => {
         this.recordViewerEvent(event);
+      },
+      (line) => {
+        this.log.appendLine(line);
       },
     );
     const updateActivePreview = (): void => {
@@ -131,6 +137,13 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
   private recordViewerEvent(event: ViewerEvent): void {
     const recorded = { ...event, receivedAt: Date.now() };
     this.lastViewerEvent = recorded;
+    if (event.type === 'viewer-error') {
+      this.log.appendLine(`[error] ${event.resource}: ${event.message}`);
+    } else {
+      this.log.appendLine(
+        `[ready] ${event.resource}: ${event.pagesCount} page(s), worker=${event.workerType}, fetch=${event.fetchMs}ms, total=${event.durationMs}ms`,
+      );
+    }
     this.viewerEventEmitter.fire(recorded);
   }
 }

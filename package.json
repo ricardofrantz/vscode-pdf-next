@@ -1,8 +1,8 @@
 {
   "name": "pdf-preview-next",
   "displayName": "vscode-pdf Next",
-  "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with PDF.js 5, live reload, search, outline, dark modes, and reliable preview state.",
-  "version": "2.1.0",
+  "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with true dark mode, the latest PDF.js (6.2.108) in a real worker thread, live reload for LaTeX/Typst including WSL, search, outline, and reliable preview state.",
+  "version": "2.2.0",
   "packageManager": "bun@1.3.13",
   "publisher": "RicardoFrantz",
   "engines": {
@@ -22,9 +22,17 @@
     "pdf-reader",
     "pdfjs",
     "latex",
-    "typst"
+    "typst",
+    "dark-mode",
+    "dark mode",
+    "night mode",
+    "dark theme"
   ],
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1e2227",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ricardofrantz/vscode-pdf-next.git"
@@ -32,15 +40,6 @@
   "bugs": {
     "url": "https://github.com/ricardofrantz/vscode-pdf-next/issues"
   },
-  "activationEvents": [
-    "onCustomEditor:pdf-preview-next.preview",
-    "onCommand:pdf-preview.openPreview",
-    "onCommand:pdf-preview.openSource",
-    "onCommand:pdf-preview.refreshPreview",
-    "onCommand:pdf-preview.print",
-    "onCommand:pdf-preview.printDirect",
-    "onCommand:pdf-preview.resetViewState"
-  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": true
@@ -204,7 +203,7 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "bun run bundle",
+    "vscode:prepublish": "node ./esbuild.config.mjs --production",
     "compile": "tsc -p ./",
     "bundle": "node ./esbuild.config.mjs",
     "typecheck": "tsc --noEmit -p ./",

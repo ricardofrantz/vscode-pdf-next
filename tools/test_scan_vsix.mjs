@@ -131,7 +131,18 @@ function createVsix({ main = './dist/extension.js', extraEntries = [] } = {}) {
       writeFile(root, entry, content);
     }
     const vsix = join(root, 'fixture.vsix');
-    execFileSync('zip', ['-qr', vsix, 'extension'], { cwd: root });
+    // zip is standard on the Linux CI runners; Windows 10+ ships bsdtar as
+    // tar.exe, which writes zip archives when told to via --format.
+    try {
+      execFileSync('zip', ['-qr', vsix, 'extension'], { cwd: root });
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+      execFileSync('tar', ['-cf', vsix, '--format', 'zip', 'extension'], {
+        cwd: root,
+      });
+    }
     return { root, vsix };
   } catch (error) {
     rmSync(root, { recursive: true, force: true });

@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as path from 'path';
 import { pathToFileURL } from 'url';
 import * as vscode from 'vscode';
 import type { ViewerEvent } from '../../webviewContract';
@@ -20,7 +21,9 @@ export async function readExtensionFile(
   const data = await vscode.workspace.fs.readFile(
     vscode.Uri.joinPath(extension.extensionUri, ...parts),
   );
-  return Buffer.from(data).toString('utf8');
+  // Normalize line endings so source-contract regexes behave identically on
+  // Windows checkouts (CRLF) and Linux CI (LF).
+  return Buffer.from(data).toString('utf8').replace(/\r\n/g, '\n');
 }
 
 export function minimalPdf(label = 'PDF Preview Next'): Uint8Array {
@@ -73,14 +76,44 @@ export function minimalPdf(label = 'PDF Preview Next'): Uint8Array {
 export async function writePdfFixture(
   extension: vscode.Extension<unknown>,
 ): Promise<vscode.Uri> {
-  const fixtureDir = vscode.Uri.joinPath(
-    extension.extensionUri,
-    '.work',
-    'test-fixtures',
-  );
+  // An override reruns the viewer fixture tests against another filesystem,
+  // e.g. a WSL UNC path such as \\wsl.localhost\Ubuntu\home\... to reproduce
+  // TeX builds that live inside WSL but open in Windows VS Code. The override
+  // comes from PDF_TEST_FIXTURE_DIR or, because VS Code does not reliably
+  // forward env vars into the test extension host, from a
+  // .work/pdf-fixture-dir.txt file at the extension root.
+  let overrideDir = process.env.PDF_TEST_FIXTURE_DIR;
+  if (!overrideDir) {
+    try {
+      const overrideFile = await vscode.workspace.fs.readFile(
+        vscode.Uri.joinPath(
+          extension.extensionUri,
+          '.work',
+          'pdf-fixture-dir.txt',
+        ),
+      );
+      overrideDir = Buffer.from(overrideFile).toString('utf8').trim();
+    } catch {
+      overrideDir = undefined;
+    }
+  }
+  const fixtureDir = overrideDir
+    ? vscode.Uri.file(path.join(overrideDir, 'test-fixtures'))
+    : vscode.Uri.joinPath(extension.extensionUri, '.work', 'test-fixtures');
   await vscode.workspace.fs.createDirectory(fixtureDir);
   const fixtureUri = vscode.Uri.joinPath(fixtureDir, 'minimal.pdf');
   await vscode.workspace.fs.writeFile(fixtureUri, minimalPdf());
+  // Record where the fixture actually went: extension-host console output is
+  // not reliably forwarded to the test runner's stdout, and CI debugging of
+  // filesystem-override runs (WSL UNC paths) needs ground truth on disk.
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.joinPath(
+      extension.extensionUri,
+      '.work',
+      'last-fixture-location.txt',
+    ),
+    Buffer.from(fixtureUri.toString(), 'utf8'),
+  );
   return fixtureUri;
 }
 
@@ -165,6 +198,17 @@ export async function assertPolyfillsWork(
       new Uint8Array([1, 2, 3]) as Uint8Array & { toBase64(): string }
     ).toBase64(),
     'AQID',
+  );
+  assert.strictEqual(
+    (new Uint8Array([0, 15, 255]) as Uint8Array & { toHex(): string }).toHex(),
+    '000fff',
+  );
+  const uint8ArrayWithHex = Uint8Array as Uint8ArrayConstructor & {
+    fromHex(value: string): Uint8Array;
+  };
+  assert.deepStrictEqual(
+    [...uint8ArrayWithHex.fromHex('000fff')],
+    [0, 15, 255],
   );
   if (typeof Response !== 'undefined') {
     const response = new Response(new Uint8Array([1, 2, 3])) as Response & {

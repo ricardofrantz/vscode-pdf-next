@@ -17,6 +17,7 @@ function createNonce(): string {
 
 const DEFAULT_RELOAD_DEBOUNCE_MS = 800;
 const MAX_RELOAD_DELAY_MS = 5000;
+const UNC_POLL_INTERVAL_MS = 2000;
 
 function normalizedReloadDebounceMs(value: unknown): number {
   if (!Number.isFinite(value)) {
@@ -279,9 +280,12 @@ export function renderPdfPreviewHtml({
 
 export function webviewLocalResourceRoots(
   extensionRoot: vscode.Uri,
-  resource: vscode.Uri,
 ): vscode.Uri[] {
-  return [extensionRoot, vscode.Uri.joinPath(resource, '..')];
+  // Document bytes arrive over postMessage, so the webview only ever loads
+  // resources from the extension itself. Keeping the PDF's directory out of
+  // the roots both tightens the sandbox and avoids webview boot failures for
+  // locations the renderer cannot serve (UNC/WSL shares).
+  return [extensionRoot];
 }
 
 export async function clearPdfPreviewViewState(
@@ -359,6 +363,7 @@ export class PdfPreview extends Disposable {
     private readonly webviewEditor: vscode.WebviewPanel,
     private readonly workspaceState: vscode.Memento,
     private readonly onViewerEvent: (event: ViewerEvent) => void = () => {},
+    private readonly log: (line: string) => void = () => {},
   ) {
     super();
     const config = vscode.workspace.getConfiguration('pdf-preview');
@@ -367,7 +372,7 @@ export class PdfPreview extends Disposable {
 
     webviewEditor.webview.options = {
       enableScripts: true,
-      localResourceRoots: webviewLocalResourceRoots(extensionRoot, resource),
+      localResourceRoots: webviewLocalResourceRoots(extensionRoot),
     };
 
     this._register(
@@ -411,6 +416,9 @@ export class PdfPreview extends Disposable {
             break;
           case 'print-request':
             void printPdf(this.resource);
+            break;
+          case 'request-document':
+            void this.sendDocumentData(parsedMessage.requestId);
             break;
           case 'set-auto-reload': {
             const target = vscode.workspace.workspaceFolders?.length
@@ -477,17 +485,19 @@ export class PdfPreview extends Disposable {
     );
     this._register(
       watcher.onDidDelete(() => {
-        this.clearReloadTimer();
-        if (closeOnDelete) {
-          this.webviewEditor.dispose();
-          return;
-        }
-
-        const webviewMessage: HostToViewerMessage = { type: 'file-deleted' };
-        void this.webviewEditor.webview.postMessage(webviewMessage);
+        this.handleFileDeleted(closeOnDelete);
       }),
     );
     this._register({ dispose: () => this.clearReloadTimer() });
+
+    // VS Code's file watchers cannot watch UNC shares such as WSL's
+    // \\wsl.localhost (they fail with EISDIR/EUNKNOWN), which would silently
+    // break live reload for TeX/Typst builds running inside WSL. Poll the
+    // file's metadata as a fallback whenever the resource has a UNC
+    // authority.
+    if (resource.scheme === 'file' && resource.authority) {
+      this.startPollingWatcher(closeOnDelete);
+    }
 
     this.webviewEditor.webview.html = this.getWebviewContents();
   }
@@ -498,6 +508,50 @@ export class PdfPreview extends Disposable {
 
   public async openSource(): Promise<void> {
     await this.openExternal();
+  }
+
+  private async sendDocumentData(requestId: number): Promise<void> {
+    const startedAt = Date.now();
+    this.log(`[read] #${requestId} ${this.resource.toString()}`);
+    try {
+      const data = await vscode.workspace.fs.readFile(
+        this.resource.with({ fragment: '', query: '' }),
+      );
+      this.log(
+        `[read] #${requestId} ${data.byteLength} bytes in ${Date.now() - startedAt}ms`,
+      );
+      if (this.isDisposed) {
+        return;
+      }
+      const message: HostToViewerMessage = {
+        type: 'document-data',
+        requestId,
+        // workspace.fs.readFile returns a Node Buffer, which the webview
+        // message serializer JSON-ifies into {type:'Buffer',data:[...]}; a
+        // plain Uint8Array takes VS Code's binary fast path instead.
+        data: new Uint8Array(
+          data.buffer,
+          data.byteOffset,
+          data.byteLength,
+        ).slice(),
+      };
+      await this.webviewEditor.webview.postMessage(message);
+      this.log(
+        `[read] #${requestId} delivered after ${Date.now() - startedAt}ms`,
+      );
+    } catch (error) {
+      const errorText = error instanceof Error ? error.message : String(error);
+      this.log(`[read] #${requestId} failed: ${errorText}`);
+      if (this.isDisposed) {
+        return;
+      }
+      const message: HostToViewerMessage = {
+        type: 'document-error',
+        requestId,
+        message: errorText,
+      };
+      await this.webviewEditor.webview.postMessage(message);
+    }
   }
 
   public async openExternal(): Promise<void> {
@@ -537,6 +591,60 @@ export class PdfPreview extends Disposable {
       const message: HostToViewerMessage = { type: 'reset-view-state' };
       await this.webviewEditor.webview.postMessage(message);
     }
+  }
+
+  private handleFileDeleted(closeOnDelete: boolean): void {
+    this.clearReloadTimer();
+    if (closeOnDelete) {
+      this.webviewEditor.dispose();
+      return;
+    }
+
+    const webviewMessage: HostToViewerMessage = { type: 'file-deleted' };
+    void this.webviewEditor.webview.postMessage(webviewMessage);
+  }
+
+  private startPollingWatcher(closeOnDelete: boolean): void {
+    let lastStat: { mtime: number; size: number } | 'missing' | undefined;
+    let checking = false;
+    const poll = async (): Promise<void> => {
+      if (checking || this.isDisposed) {
+        return;
+      }
+      checking = true;
+      try {
+        const stat = await vscode.workspace.fs.stat(this.resource);
+        const current = { mtime: stat.mtime, size: stat.size };
+        if (lastStat === 'missing' || lastStat === undefined) {
+          // First observation, or the file reappeared after deletion.
+          const reappeared = lastStat === 'missing';
+          lastStat = current;
+          if (reappeared && this.automaticReload) {
+            this.scheduleReload();
+          }
+        } else if (
+          lastStat.mtime !== current.mtime ||
+          lastStat.size !== current.size
+        ) {
+          lastStat = current;
+          if (this.automaticReload) {
+            this.scheduleReload();
+          }
+        }
+      } catch {
+        if (lastStat !== 'missing' && lastStat !== undefined) {
+          lastStat = 'missing';
+          this.handleFileDeleted(closeOnDelete);
+        }
+      } finally {
+        checking = false;
+      }
+    };
+    const timer = setInterval(() => {
+      void poll();
+    }, UNC_POLL_INTERVAL_MS);
+    this._register({ dispose: () => clearInterval(timer) });
+    void poll();
   }
 
   private scheduleReload(): void {
@@ -593,6 +701,8 @@ export class PdfPreview extends Disposable {
       standardFontDataUrl: resolveDir(...pdfjsDir, 'standard_fonts'),
       wasmUrl: resolveDir(...pdfjsDir, 'wasm'),
       workerSrc: resolve('lib', 'pdf.worker-wrapper.mjs'),
+      polyfillsUrl: resolve('lib', 'polyfills.mjs'),
+      workerBundleUrl: resolve(...pdfjsDir, 'build', 'pdf.worker.min.mjs'),
       defaults: {
         cursor: pdfConfig.get<string>('default.cursor'),
         scale: pdfConfig.get<string>('default.scale'),
