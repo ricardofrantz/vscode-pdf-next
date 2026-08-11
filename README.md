@@ -1,10 +1,9 @@
 # vscode-pdf Next — fast, secure PDF viewing in VS Code
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/RicardoFrantz.pdf-preview-next?label=Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=RicardoFrantz.pdf-preview-next)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/RicardoFrantz.pdf-preview-next?color=success)](https://marketplace.visualstudio.com/items?itemName=RicardoFrantz.pdf-preview-next)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/RicardoFrantz.pdf-preview-next)](https://marketplace.visualstudio.com/items?itemName=RicardoFrantz.pdf-preview-next&ssr=false#review-details)
-[![Open VSX](https://img.shields.io/open-vsx/v/RicardoFrantz/pdf-preview-next?label=Open%20VSX)](https://open-vsx.org/extension/RicardoFrantz/pdf-preview-next)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/ricardofrantz/vscode-pdf-next/blob/main/LICENSE)
+[![CI](https://github.com/ricardofrantz/vscode-pdf-next/actions/workflows/ci.yml/badge.svg)](https://github.com/ricardofrantz/vscode-pdf-next/actions/workflows/ci.yml)
+[![Marketplace](https://img.shields.io/badge/marketplace-vscode--pdf--next-blue)](https://marketplace.visualstudio.com/items?itemName=RicardoFrantz.pdf-preview-next)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![GitHub](https://img.shields.io/badge/github-vscode--pdf--next-blue)](https://github.com/ricardofrantz/vscode-pdf-next)
 
 Open PDFs right inside VS Code — with **true dark mode**, instant live reload
 for LaTeX and Typst builds, search, outline navigation, and a
@@ -69,6 +68,10 @@ one with `pdf-preview.appearance.theme`:
 | `reader`   | Warm e-reader sepia pages — comfortable reading without going dark.       |
 | `inverted` | Full-page inversion fallback for scanned or image-heavy PDFs.             |
 
+The toolbar button cycles **Night → Reader → Invert** — it never lands back on
+plain white pages. Shift+click (or Alt+click) it to go back to normal pages, or
+set `pdf-preview.appearance.theme` to make a mode stick for every PDF.
+
 ## Getting started
 
 Install from the Marketplace (search for **"vscode-pdf Next"**) or from the
@@ -86,8 +89,7 @@ Then just open any `.pdf` file. To make this the default PDF viewer:
 }
 ```
 
-Also available on [Open VSX](https://open-vsx.org/extension/RicardoFrantz/pdf-preview-next)
-for VSCodium and friends, or as a VSIX from
+Also available as a VSIX from
 [GitHub Releases](https://github.com/ricardofrantz/vscode-pdf-next/releases):
 
 ```bash

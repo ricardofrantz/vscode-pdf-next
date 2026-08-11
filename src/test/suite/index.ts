@@ -1227,8 +1227,13 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /const CYCLE_THEME_VALUES = \[['"]auto['"], ['"]night['"], ['"]reader['"], ['"]inverted['"]\]/,
-    'Theme cycle must expose Clear, Night, Reader, and Invert modes.',
+    /const CYCLE_THEME_VALUES = \[['"]night['"], ['"]reader['"], ['"]inverted['"]\]/,
+    'Theme cycle must walk only the page reading modes, never landing on plain pages.',
+  );
+  assert.match(
+    viewerScriptText,
+    /themeToggle\.addEventListener\(['"]click['"], \(event\) => {\s*this\.cyclePageTheme\(\{ clear: event\.shiftKey \|\| event\.altKey \}\);/,
+    'Theme toggle must offer a Shift/Alt+click escape hatch back to plain pages.',
   );
   assert.match(
     viewerScriptText,
@@ -1242,8 +1247,8 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /cyclePageTheme\(\)\s*{[\s\S]*?this\.applyPageColors\(pageColorsForTheme\(this\.appearance\.theme\)\)[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
-    'Theme cycle must re-render in place, falling back to a view-state-preserving reload.',
+    /cyclePageTheme\(\{ clear = false \} = \{\}\)\s*{[\s\S]*?clear\s*\?\s*this\.clearTheme\s*:\s*nextCycleTheme\(this\.appearance\.theme\)[\s\S]*?this\.applyPageColors\(pageColorsForTheme\(this\.appearance\.theme\)\)[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
+    'Theme cycle must clear on demand and re-render in place, falling back to a view-state-preserving reload.',
   );
   assert.match(
     viewerScriptText,

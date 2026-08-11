@@ -1,6 +1,18 @@
 # Changelog
 
-## 2.2.1 (2026/08/11)
+## 2.2.2 (2026/08/11)
+
+- Stop the page-theme button from cycling back to plain white pages. It now
+  walks only the reading modes — Night, Reader, Invert — so every click lands
+  on something readable. Shift+click (or Alt+click) the button to return to
+  plain pages, which is also still what `pdf-preview.appearance.theme`
+  controls for every PDF.
+- Replace the README badges. Shields.io retired all Visual Studio Marketplace
+  badges in April 2026, so the version, installs, and rating badges rendered a
+  grey "retired badge" placeholder; they are replaced with a GitHub-native CI
+  badge and static Marketplace/GitHub badges, matching vscode-diff Next. The
+  Open VSX badge and download link are removed because the extension is not
+  published there.
 
 - Make Reader mode visually distinct: pages render with a warm e-reader
   sepia palette (`#f4ecd8` paper, `#5b4636` text) instead of duplicating
