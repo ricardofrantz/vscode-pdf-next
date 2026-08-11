@@ -44,12 +44,13 @@ gh secret set OVSX_PAT -R ricardofrantz/vscode-pdf-next
 ## Release workflow guardrails
 
 The release workflow is guarded for maintainers: third-party actions are pinned
-by full commit SHA, CI/release jobs use concurrency groups, and tag pushes only
-verify/package the release. GitHub Release, Marketplace, and Open VSX publishing
-require a manual `workflow_dispatch` run with `dry_run=false`, a matching
-`confirm_publish` phrase, and approval through the `marketplace-publish` GitHub
-environment. Configure that environment with required reviewers before adding
-publish tokens.
+by full commit SHA, CI/release jobs use concurrency groups, and the workflow
+validates that the tag is a well-formed `v<major>.<minor>.<patch>` tag whose
+commit matches `package.json`'s version. Tag pushes publish automatically after
+verification; manual `workflow_dispatch` runs additionally require
+`dry_run=false`, a matching `confirm_publish` phrase, and (optionally) reviewer
+approval on the `marketplace-publish` GitHub environment. Configure that
+environment with required reviewers before adding publish tokens.
 
 ## Upgrade PDF.js
 

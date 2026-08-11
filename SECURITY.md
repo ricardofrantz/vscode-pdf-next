@@ -4,7 +4,7 @@
 
 Please report security issues privately to the repository owner via GitHub
 Security Advisories on
-<https://github.com/ricardofrantz/pdf-preview-next/security/advisories/new>,
+<https://github.com/ricardofrantz/vscode-pdf-next/security/advisories/new>,
 or by opening a minimal public issue asking for a private contact channel.
 
 Do not include exploit details in public issues.

@@ -167,6 +167,20 @@ release automation is hardened too: CI actions pinned by commit SHA and
 publishing gated behind a protected environment. Details in
 [SECURITY.md](https://github.com/ricardofrantz/vscode-pdf-next/blob/main/SECURITY.md).
 
+## Identity (same family as vscode-diff Next)
+
+| | **vscode-pdf Next** | **vscode-diff Next** |
+| -- | ------------------- | -------------------- |
+| Repository | `ricardofrantz/vscode-pdf-next` | `ricardofrantz/vscode-diff-next` |
+| Display name | `vscode-pdf Next` | `vscode-diff Next` |
+| Package name | `pdf-preview-next` | `diff-next` |
+| Install id | `RicardoFrantz.pdf-preview-next` | `RicardoFrantz.diff-next` |
+| Command prefix | `vscode-pdf Next: …` | `vscode-diff Next: …` |
+
+Publisher for both: **RicardoFrantz**. Both repos share the same conventions:
+`main` branch, `vX.Y.Z` tags, tag-driven release workflow with attached VSIX,
+eslint 9 flat config, and a documented security model.
+
 ## Coming from `tomoki1207.vscode-pdf`?
 
 You'll feel at home — this project started as a security-hardened fork of that
