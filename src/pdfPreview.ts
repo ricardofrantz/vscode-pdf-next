@@ -52,49 +52,53 @@ export interface PdfPreviewHtmlOptions {
 export const PDF_VIEWER_BODY = `<body>
   <svg style="display: none;">
     <symbol id="icon-chevron-left" viewBox="0 0 16 16" fill="none">
-      <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-chevron-right" viewBox="0 0 16 16" fill="none">
-      <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-zoom-out" viewBox="0 0 16 16" fill="none">
-      <path d="M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="7" cy="7" r="4.25" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M10.2 10.2L13.2 13.2M5.25 7H8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </symbol>
     <symbol id="icon-zoom-in" viewBox="0 0 16 16" fill="none">
-      <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="7" cy="7" r="4.25" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M10.2 10.2L13.2 13.2M5.25 7H8.75M7 5.25V8.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </symbol>
     <symbol id="icon-search" viewBox="0 0 16 16" fill="none">
-      <circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.33"/>
-      <path d="M10 10L13 13" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/>
+      <circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M10 10L13 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </symbol>
     <symbol id="icon-chevron-up" viewBox="0 0 16 16" fill="none">
-      <path d="M4 10L8 6L12 10" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 10L8 6L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-chevron-down" viewBox="0 0 16 16" fill="none">
-      <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-list-tree" viewBox="0 0 16 16" fill="none">
-      <path d="M3 3H13M3 8H13M3 13H13" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/>
-      <circle cx="1" cy="3" r="1" fill="currentColor"/>
-      <circle cx="1" cy="8" r="1" fill="currentColor"/>
-      <circle cx="1" cy="13" r="1" fill="currentColor"/>
+      <path d="M2.5 3.5H13.5M5.5 8H13.5M8.5 12.5H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M3.25 6.5V8H4.75M6.25 11V12.5H7.75" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-printer" viewBox="0 0 16 16" fill="none">
-      <path d="M3 6H13C13.55 6 14 6.45 14 7V11C14 11.55 13.55 12 13 12H3C2.45 12 2 11.55 2 11V7C2 6.45 2.45 6 3 6Z" stroke="currentColor" stroke-width="1.33"/>
-      <path d="M4 6V4C4 3.45 4.45 3 5 3H11C11.55 3 12 3.45 12 4V6" stroke="currentColor" stroke-width="1.33"/>
-      <path d="M4 12V14C4 14.55 4.45 15 5 15H11C11.55 15 12 14.55 12 14V12" stroke="currentColor" stroke-width="1.33"/>
+      <path d="M3 6H13C13.55 6 14 6.45 14 7V11C14 11.55 13.55 12 13 12H3C2.45 12 2 11.55 2 11V7C2 6.45 2.45 6 3 6Z" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M4 6V4C4 3.45 4.45 3 5 3H11C11.55 3 12 3.45 12 4V6" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M4 12V14C4 14.55 4.45 15 5 15H11C11.55 15 12 14.55 12 14V12" stroke="currentColor" stroke-width="1.5"/>
     </symbol>
     <symbol id="icon-refresh" viewBox="0 0 16 16" fill="none">
-      <path d="M13 8A5 5 0 1 0 8 13" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/>
-      <path d="M13 8V5M13 8H10" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 8A5 5 0 1 0 8 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M13 8V5M13 8H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-auto-refresh" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="5.25" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M8 5V8L9.9 9.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-external-link" viewBox="0 0 16 16" fill="none">
-      <path d="M6 4H4C3.45 4 3 4.45 3 5V12C3 12.55 3.45 13 4 13H11C11.55 13 12 12.55 12 12V10" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/>
-      <path d="M9 3H13V7" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M8 8L13 3" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/>
+      <path d="M6 4H4C3.45 4 3 4.45 3 5V12C3 12.55 3.45 13 4 13H11C11.55 13 12 12.55 12 12V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M9 3H13V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 8L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </symbol>
     <symbol id="icon-theme" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.33"/>
+      <circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.5"/>
       <path d="M8 3.5A4.5 4.5 0 0 0 8 12.5V3.5Z" fill="currentColor"/>
     </symbol>
   </svg>
@@ -110,7 +114,7 @@ export const PDF_VIEWER_BODY = `<body>
           <span class="label">Next</span>
         </button>
         <input id="pageNumber" type="number" min="1" value="1" title="Page" aria-label="Page number">
-        <span id="numPages">of 0</span>
+        <span id="numPages">of —</span>
       </div>
       <div class="toolbar-group">
         <button id="zoomOut" class="icon-button" type="button" title="Zoom out" aria-label="Zoom out">
@@ -165,7 +169,7 @@ export const PDF_VIEWER_BODY = `<body>
           <span class="label">Refresh</span>
         </button>
         <button id="autoReloadToggle" class="icon-button" type="button" title="Disable automatic reload" aria-label="Disable automatic reload" aria-pressed="true">
-          <svg class="icon" width="16" height="16"><use href="#icon-refresh"/></svg>
+          <svg class="icon" width="16" height="16"><use href="#icon-auto-refresh"/></svg>
           <span class="label">Auto</span>
         </button>
         <button id="openSource" class="icon-button" type="button" title="Open PDF with system viewer" aria-label="Open PDF with system viewer">
@@ -173,7 +177,6 @@ export const PDF_VIEWER_BODY = `<body>
           <span class="label">External</span>
         </button>
       </div>
-      <span id="status" role="status" aria-live="polite"></span>
     </header>
     <div id="pdf-content">
       <aside id="outlineSidebar" class="outline-sidebar hidden" aria-label="Document sidebar">
@@ -194,6 +197,7 @@ export const PDF_VIEWER_BODY = `<body>
         <div id="viewerContainer" role="main" tabindex="0">
           <div id="viewer" class="pdfViewer"></div>
         </div>
+        <span id="status" role="status" aria-live="polite"></span>
       </div>
     </div>
     <div id="passwordOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">

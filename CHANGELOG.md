@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.3.0 (2026/08/12)
+
+Viewer chrome rebuilt to look and behave like the rest of VS Code, plus five
+defects found while auditing it.
+
+Fixes:
+
+- Status text — including `Could not load PDF`, the deleted-file notice, and
+  loading progress — was clipped to a 1x1 screen-reader-only box in any editor
+  pane narrower than 1160px, which is every side-by-side layout. It now floats
+  over the document as a widget and survives at any width.
+- `Ctrl/Cmd+F` did nothing below 420px, where the find group is hidden and the
+  shortcut focused a `display: none` input. It now reveals the find bar first,
+  and `Esc` closes it.
+- The zoom control read a stale preset after keyboard or button zoom, and wrote
+  the live percentage into the status element — so zooming erased load errors
+  and vice versa. The percentage now shows in the zoom control itself.
+- Automatic reload had the same icon as manual refresh, and toolbar labels are
+  hidden at normal widths, so two adjacent buttons were indistinguishable.
+  Auto-reload now has its own icon.
+- Inverted mode inverted the whole page including the text layer, which turned
+  find highlights blue in the mode chosen for contrast. The filter is now
+  scoped to the canvas.
+
+Appearance:
+
+- Toolbar buttons are borderless like VS Code's own action bars instead of
+  being drawn as filled text inputs, and presses swap the background rather
+  than scaling the button.
+- Viewer chrome derives from the active theme; the hardcoded `#f6f8fa`,
+  `#ffffff` and `#1f1f1f` surfaces are gone, so custom themes no longer clash.
+  Reader mode warms the surrounding surface to match its sepia pages.
+- Pages have a visible edge again (PDF.js 6 ships them without one), so page
+  boundaries read in every mode.
+- Denser 36px toolbar, 22px outline rows, native select popups and scrollbars
+  follow the editor theme, and the theme and sidebar buttons reserve their
+  label width so clicking them no longer reflows the toolbar.
+- The focusable document region shows a focus ring, and the password dialog
+  uses VS Code widget tokens.
+
 ## 2.2.2 (2026/08/11)
 
 - Stop the page-theme button from cycling back to plain white pages. It now

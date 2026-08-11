@@ -72,6 +72,10 @@ The toolbar button cycles **Night → Reader → Invert** — it never lands bac
 plain white pages. Shift+click (or Alt+click) it to go back to normal pages, or
 set `pdf-preview.appearance.theme` to make a mode stick for every PDF.
 
+The viewer chrome follows your VS Code theme rather than hardcoded colors, so
+the toolbar, sidebar, and the surface behind the pages match whatever theme you
+run — including custom ones.
+
 ## Getting started
 
 Install from the Marketplace (search for **"vscode-pdf Next"**) or from the
@@ -104,7 +108,10 @@ code --install-extension pdf-preview-next-<version>.vsix --force
 | `n` / `p` (or `.` / `,`) | Next / previous page |
 | `g` / `G`           | First / last page        |
 | `+` / `-`           | Zoom in / out            |
+| `Ctrl+F` / `Cmd+F`  | Find in document         |
+| `Ctrl+C` / `Cmd+C`  | Copy selected PDF text   |
 | `Ctrl+R` / `Cmd+R`  | Refresh the preview      |
+| `Esc`               | Close the find bar       |
 
 ## Settings
 

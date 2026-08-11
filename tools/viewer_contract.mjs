@@ -139,6 +139,51 @@ export function assertViewerContract({
   );
   assert.match(
     stylesSource,
+    /\nbutton\s*{[^}]*background:\s*transparent;[^}]*border:\s*1px solid transparent;/s,
+    `${context}: toolbar buttons must be borderless like VS Code action bars, not filled like inputs.`,
+  );
+  assert.match(
+    stylesSource,
+    /button:hover:not\(:disabled\)\s*{[^}]*background:\s*var\(--vscode-toolbar-hoverBackground\)/s,
+    `${context}: toolbar buttons must show the VS Code toolbar hover background.`,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /button:active:not\(:disabled\)\s*{[^}]*transform:\s*scale/s,
+    `${context}: button presses must swap background like VS Code, not scale like a web app.`,
+  );
+  assert.match(
+    stylesSource,
+    /#status\s*{[^}]*position:\s*absolute;/s,
+    `${context}: status must float over the document so load errors survive narrow panes.`,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /@container\s*\(max-width:\s*1160px\)[\s\S]*?#status[^}]*clip:\s*rect/,
+    `${context}: status must never be clipped to a screen-reader-only box; it carries load errors.`,
+  );
+  assert.match(
+    stylesSource,
+    /@container\s*\(max-width:\s*420px\)[\s\S]*?body\.find-open \.toolbar-find\s*{[^}]*display:\s*inline-flex;/s,
+    `${context}: Ctrl+F must be able to reveal the find group in very narrow toolbars.`,
+  );
+  assert.match(
+    stylesSource,
+    /\.pdfViewer\s+\.page\s*{[^}]*box-shadow:/s,
+    `${context}: pages must have a visible edge; PDF.js 6 renders them without one.`,
+  );
+  assert.match(
+    stylesSource,
+    /body\.theme-inverted\s+\.pdfViewer\s+\.page\s+\.canvasWrapper\s*{[^}]*filter:\s*invert\(1\)/s,
+    `${context}: inverted mode must invert only the canvas, or it also inverts find highlights.`,
+  );
+  assert.doesNotMatch(
+    stylesSource,
+    /body\.theme-light\s+#viewerContainer\s*{[^}]*background:\s*#/s,
+    `${context}: viewer chrome must derive from the active VS Code theme, not hardcoded hex.`,
+  );
+  assert.match(
+    stylesSource,
     /#pdf-root[^}]*container-type:\s*inline-size/,
     `${context}: pdf root must provide the toolbar container query so toolbar self-styles can respond.`,
   );

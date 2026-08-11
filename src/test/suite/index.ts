@@ -819,7 +819,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     webviewSourceText,
-    /<button id="autoReloadToggle"[^>]*title="Disable automatic reload"[^>]*aria-label="Disable automatic reload"[^>]*aria-pressed="true"[^>]*>[\s\S]*?<use href="#icon-refresh"\/>[\s\S]*?<span class="label">Auto<\/span>/,
+    /<button id="autoReloadToggle"[^>]*title="Disable automatic reload"[^>]*aria-label="Disable automatic reload"[^>]*aria-pressed="true"[^>]*>[\s\S]*?<use href="#icon-auto-refresh"\/>[\s\S]*?<span class="label">Auto<\/span>/,
     'Auto-reload toggle must expose a pressed state next to the reload button.',
   );
   assert.match(
@@ -956,6 +956,46 @@ export async function run(): Promise<void> {
     viewerStylesText,
     /\.icon-button\s*{[^}]*flex-shrink:\s*0;/s,
     'Icon toolbar buttons must not shrink text into their borders.',
+  );
+  assert.match(
+    viewerStylesText,
+    /\nbutton\s*{[^}]*background:\s*transparent;[^}]*border:\s*1px solid transparent;/s,
+    'Toolbar buttons must be borderless like VS Code action bars, not filled like inputs.',
+  );
+  assert.doesNotMatch(
+    viewerStylesText,
+    /button:active:not\(:disabled\)\s*{[^}]*transform:\s*scale/s,
+    'Button presses must swap background like VS Code, not scale like a web app.',
+  );
+  assert.match(
+    viewerStylesText,
+    /#status\s*{[^}]*position:\s*absolute;/s,
+    'Status must float over the document so load errors survive narrow panes.',
+  );
+  assert.doesNotMatch(
+    viewerStylesText,
+    /@container\s*\(max-width:\s*1160px\)[\s\S]*?#status[^}]*clip:\s*rect/,
+    'Status must never be clipped to a screen-reader-only box; it carries load errors.',
+  );
+  assert.match(
+    viewerStylesText,
+    /@container\s*\(max-width:\s*420px\)[\s\S]*?body\.find-open \.toolbar-find\s*{[^}]*display:\s*inline-flex;/s,
+    'Ctrl+F must be able to reveal the find group in very narrow toolbars.',
+  );
+  assert.match(
+    viewerStylesText,
+    /\.pdfViewer\s+\.page\s*{[^}]*box-shadow:/s,
+    'Pages must have a visible edge; PDF.js 6 renders them without one.',
+  );
+  assert.match(
+    viewerStylesText,
+    /body\.theme-inverted\s+\.pdfViewer\s+\.page\s+\.canvasWrapper\s*{[^}]*filter:\s*invert\(1\)/s,
+    'Inverted mode must invert only the canvas, or it also inverts find highlights.',
+  );
+  assert.match(
+    viewerStylesText,
+    /#viewerContainer:focus-visible\s*{[^}]*outline:\s*1px solid var\(--vscode-focusBorder\)/s,
+    'The scrollable document region is focusable and must show a focus ring.',
   );
   assert.match(
     viewerStylesText,
@@ -1234,6 +1274,21 @@ export async function run(): Promise<void> {
     viewerScriptText,
     /themeToggle\.addEventListener\(['"]click['"], \(event\) => {\s*this\.cyclePageTheme\(\{ clear: event\.shiftKey \|\| event\.altKey \}\);/,
     'Theme toggle must offer a Shift/Alt+click escape hatch back to plain pages.',
+  );
+  assert.match(
+    viewerScriptText,
+    /updateScaleSelect\(scaleValue\)\s*{[\s\S]*?customOption\.textContent = `\$\{percent\}%`;[\s\S]*?this\.elements\.scaleSelect\.value = ['"]custom['"]/,
+    'Off-preset zoom must be shown in the zoom control itself, not written into the status element.',
+  );
+  assert.doesNotMatch(
+    viewerScriptText,
+    /updateScaleSelect\(scaleValue\)\s*{[\s\S]*?this\.setStatus\(`\$\{percent\}%`\)/,
+    'Zoom readout must not overwrite load errors in the shared status element.',
+  );
+  assert.match(
+    viewerScriptText,
+    /key === ['"]f['"]\)\s*{[\s\S]*?document\.body\.classList\.add\(['"]find-open['"]\)/,
+    'Ctrl+F must reveal the find group before focusing it.',
   );
   assert.match(
     viewerScriptText,
