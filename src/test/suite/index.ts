@@ -944,7 +944,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerStylesText,
-    /body\.theme-night\s+\.pdfViewer,\s*body\.theme-reader\s+\.pdfViewer,\s*body\.theme-dark-pages\s+\.pdfViewer\s*{[^}]*--page-bg-color:\s*#1b1b1b/s,
+    /body\.theme-night\s+\.pdfViewer,\s*body\.theme-dark-pages\s+\.pdfViewer\s*{[^}]*--page-bg-color:\s*#1b1b1b/s,
     'Night mode must set the PDF page background before PDF.js page shells render.',
   );
   assert.match(
@@ -1019,7 +1019,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerStylesText,
-    /body\.theme-dark\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-night\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-reader\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-dark-pages\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-inverted\s+\.textLayer\s+\.highlight\.selected\s*{/,
+    /body\.theme-dark\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-night\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-dark-pages\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-inverted\s+\.textLayer\s+\.highlight\.selected\s*{/,
     'Dark, night, reader, dark-pages, and inverted themes must override selected find highlight.',
   );
 
@@ -1222,8 +1222,8 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /function pageColorsForTheme\(theme\)\s*{[\s\S]*?theme !== ['"]night['"] &&\s*theme !== ['"]reader['"] &&\s*theme !== ['"]dark-pages['"][\s\S]*?background: ['"]#1b1b1b['"], foreground: ['"]#d6d1c4['"]/,
-    'Night and reader modes must map to concrete PDF.js pageColors.',
+    /function pageColorsForTheme\(theme\)\s*{[\s\S]*?theme === ['"]night['"] \|\| theme === ['"]dark-pages['"][\s\S]*?background: ['"]#1b1b1b['"], foreground: ['"]#d6d1c4['"][\s\S]*?theme === ['"]reader['"][\s\S]*?background: ['"]#f4ecd8['"], foreground: ['"]#5b4636['"]/,
+    'Night must map to dark pageColors and reader to distinct sepia pageColors.',
   );
   assert.match(
     viewerScriptText,

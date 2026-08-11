@@ -66,7 +66,7 @@ one with `pdf-preview.appearance.theme`:
 | `auto`     | Follows your VS Code theme for the viewer chrome.                         |
 | `dark`     | Dark viewer chrome, original page colors.                                 |
 | `night`    | PDF.js re-renders page content in dark colors — real dark pages, not a CSS filter. |
-| `reader`   | Reader-compatible night rendering.                                        |
+| `reader`   | Warm e-reader sepia pages — comfortable reading without going dark.       |
 | `inverted` | Full-page inversion fallback for scanned or image-heavy PDFs.             |
 
 ## Getting started

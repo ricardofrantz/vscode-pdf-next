@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.1 (2026/08/11)
+
+- Make Reader mode visually distinct: pages render with a warm e-reader
+  sepia palette (`#f4ecd8` paper, `#5b4636` text) instead of duplicating
+  Night's dark rendering, and find highlights use the light-paper colors on
+  sepia pages. The theme cycle now offers four genuinely different looks:
+  Clear, Night, Reader, and Invert.
+
 ## 2.2.0 (2026/08/11)
 
 - Load PDF bytes through the extension host instead of a webview resource

@@ -538,9 +538,12 @@ body.theme-inverted #viewerContainer {
 }
 
 body.theme-night .pdfViewer,
-body.theme-reader .pdfViewer,
 body.theme-dark-pages .pdfViewer {
   --page-bg-color: #1b1b1b;
+}
+
+body.theme-reader .pdfViewer {
+  --page-bg-color: #f4ecd8;
 }
 
 body.theme-inverted .pdfViewer .page {
@@ -563,9 +566,9 @@ body.theme-inverted .pdfViewer .page {
     0 2px 7px rgb(0 0 0 / 0.28);
 }
 
+/* Reader's sepia pages use the base light-paper highlight colors. */
 body.theme-dark .textLayer .highlight,
 body.theme-night .textLayer .highlight,
-body.theme-reader .textLayer .highlight,
 body.theme-dark-pages .textLayer .highlight,
 body.theme-inverted .textLayer .highlight {
   --highlight-bg-color: rgb(255 198 54 / 0.96);
@@ -577,7 +580,6 @@ body.theme-inverted .textLayer .highlight {
 
 body.theme-dark .textLayer .highlight.selected,
 body.theme-night .textLayer .highlight.selected,
-body.theme-reader .textLayer .highlight.selected,
 body.theme-dark-pages .textLayer .highlight.selected,
 body.theme-inverted .textLayer .highlight.selected {
   box-shadow:

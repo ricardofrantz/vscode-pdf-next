@@ -119,8 +119,13 @@ export function assertViewerContract({
   );
   assert.match(
     stylesSource,
-    /body\.theme-night\s+\.pdfViewer,\s*body\.theme-reader\s+\.pdfViewer,\s*body\.theme-dark-pages\s+\.pdfViewer\s*{[^}]*--page-bg-color:\s*#1b1b1b/s,
+    /body\.theme-night\s+\.pdfViewer,\s*body\.theme-dark-pages\s+\.pdfViewer\s*{[^}]*--page-bg-color:\s*#1b1b1b/s,
     `${context}: night mode must set page background before PDF.js page shells render.`,
+  );
+  assert.match(
+    stylesSource,
+    /body\.theme-reader\s+\.pdfViewer\s*{[^}]*--page-bg-color:\s*#f4ecd8/s,
+    `${context}: reader mode must set the sepia page background before PDF.js page shells render.`,
   );
   assert.match(
     stylesSource,
@@ -204,8 +209,8 @@ export function assertViewerContract({
   );
   assert.match(
     stylesSource,
-    /body\.theme-dark\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-night\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-reader\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-dark-pages\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-inverted\s+\.textLayer\s+\.highlight\.selected\s*{/,
-    `${context}: dark, night, reader, dark-pages, and inverted themes must override selected find highlight.`,
+    /body\.theme-dark\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-night\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-dark-pages\s+\.textLayer\s+\.highlight\.selected,\s*body\.theme-inverted\s+\.textLayer\s+\.highlight\.selected\s*{/,
+    `${context}: dark, night, dark-pages, and inverted themes must override selected find highlight; reader uses the light-paper highlight on sepia pages.`,
   );
 
   if (viewerScriptSource) {
