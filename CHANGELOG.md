@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.4.1 (2026/08/12)
+## 2.4.2 (2026/08/12)
 
 Clearing a page mode did not clear it. Page colours are drawn into the page
 canvas rather than applied over it, so a colour change only shows once the
@@ -16,7 +16,7 @@ is now dropped explicitly when the colours change.
   value; `reader` keeps working.
 - **Clear is a stop in the cycle again.** Removing it in 2.2.2 fixed landing
   on white every other press and created a worse problem: no way back to
-  white at all. The cycle is Clear → Night → Sepia → Invert, and the direct
+  white at all. The cycle is Clear → Night → Invert → Sepia, and the direct
   routes added in 2.4.0 (right-click, Command Palette) still jump straight
   to Clear from anywhere.
 

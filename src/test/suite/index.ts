@@ -1302,7 +1302,7 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /const CYCLE_THEME_VALUES = \[['"]auto['"], ['"]night['"], ['"]reader['"], ['"]inverted['"]\]/,
+    /const CYCLE_THEME_VALUES = \[['"]auto['"], ['"]night['"], ['"]inverted['"], ['"]reader['"]\]/,
     'Theme cycle must include Clear so plain white pages are always one press away.',
   );
   assert.match(
