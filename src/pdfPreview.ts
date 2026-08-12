@@ -563,7 +563,9 @@ export class PdfPreview extends Disposable {
         );
         return data;
       }
-      this.log(`[read] #${requestId} truncated (${data.byteLength} bytes), waiting`);
+      this.log(
+        `[read] #${requestId} truncated (${data.byteLength} bytes), waiting`,
+      );
       await delay(INCOMPLETE_READ_RETRY_MS);
     }
   }
