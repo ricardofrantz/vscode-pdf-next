@@ -1366,8 +1366,8 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /vscode\.postMessage\(\{\s*type: ['"]appearance-theme['"],\s*theme: this\.appearance\.theme,\s*}\)/,
-    'Theme toggle must persist the night-mode choice for future PDFs.',
+    /if \(persist\) {\s*vscode\.postMessage\(\{\s*type: ['"]appearance-theme['"],\s*theme,\s*\}\);/,
+    'Pressing the page-mode button must persist the choice for future PDFs.',
   );
   assert.match(
     viewerScriptText,
