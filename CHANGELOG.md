@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.4.1 (2026/08/12)
+
+Clearing a page mode did not clear it. Page colours are drawn into the page
+canvas rather than applied over it, so a colour change only shows once the
+canvas is redrawn — and the viewer asked PDF.js to refresh, which is not the
+same thing. `PDFViewer.refresh()` routes through `PDFPageView.update()`, and
+when nothing about the page geometry has changed that resets with
+`keepCanvasWrapper`, which never calls `_resetCanvas()`. The old bitmap
+stayed. Leaving Sepia therefore turned the page background white through CSS
+and left the text brown, which looks like nothing happened. Each page canvas
+is now dropped explicitly when the colours change.
+
+- **Reader is called Sepia**, which is what it is. `sepia` is now the setting
+  value; `reader` keeps working.
+- **Clear is a stop in the cycle again.** Removing it in 2.2.2 fixed landing
+  on white every other press and created a worse problem: no way back to
+  white at all. The cycle is Clear → Night → Sepia → Invert, and the direct
+  routes added in 2.4.0 (right-click, Command Palette) still jump straight
+  to Clear from anywhere.
+
 ## 2.4.0 (2026/08/12)
 
 Plain white pages are reachable again. The toolbar button cycles Night,

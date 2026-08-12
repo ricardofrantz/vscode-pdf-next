@@ -676,6 +676,7 @@ export async function run(): Promise<void> {
     'dark',
     'night',
     'reader',
+    'sepia',
     'dark-pages',
     'inverted',
   ]);
@@ -1291,18 +1292,18 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /const THEME_VALUES = new Set\(\[\s*['"]auto['"],\s*['"]light['"],\s*['"]dark['"],\s*['"]night['"],\s*['"]reader['"],\s*['"]dark-pages['"],\s*['"]inverted['"],\s*\]\)/,
-    'Viewer theme contract must recognize night, reader, and dark-pages.',
+    /const THEME_VALUES = new Set\(\[\s*['"]auto['"],\s*['"]light['"],\s*['"]dark['"],\s*['"]night['"],\s*['"]reader['"],\s*['"]sepia['"],\s*['"]dark-pages['"],\s*['"]inverted['"],\s*\]\)/,
+    'Viewer theme contract must recognize night, reader/sepia, and dark-pages.',
   );
   assert.match(
     viewerScriptText,
-    /function pageColorsForTheme\(theme\)\s*{[\s\S]*?theme === ['"]night['"] \|\| theme === ['"]dark-pages['"][\s\S]*?background: ['"]#1b1b1b['"], foreground: ['"]#d6d1c4['"][\s\S]*?theme === ['"]reader['"][\s\S]*?background: ['"]#f4ecd8['"], foreground: ['"]#5b4636['"]/,
+    /function pageColorsForTheme\(theme\)\s*{[\s\S]*?theme === ['"]night['"] \|\| theme === ['"]dark-pages['"][\s\S]*?background: ['"]#1b1b1b['"], foreground: ['"]#d6d1c4['"][\s\S]*?theme === ['"]reader['"] \|\| theme === ['"]sepia['"][\s\S]*?background: ['"]#f4ecd8['"], foreground: ['"]#5b4636['"]/,
     'Night must map to dark pageColors and reader to distinct sepia pageColors.',
   );
   assert.match(
     viewerScriptText,
-    /const CYCLE_THEME_VALUES = \[['"]night['"], ['"]reader['"], ['"]inverted['"]\]/,
-    'Theme cycle must walk only the page reading modes, never landing on plain pages.',
+    /const CYCLE_THEME_VALUES = \[['"]auto['"], ['"]night['"], ['"]reader['"], ['"]inverted['"]\]/,
+    'Theme cycle must include Clear so plain white pages are always one press away.',
   );
   assert.match(
     viewerScriptText,
@@ -1341,8 +1342,13 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /applyPageColors\(pageColors\)\s*{[\s\S]*?this\.pdfViewer\.pageColors = pageColors;[\s\S]*?pageView\.pageColors = pageColors;[\s\S]*?this\.pdfViewer\.refresh\(\);[\s\S]*?}/,
-    'Theme changes must update page colors on live page views and refresh without reparsing.',
+    /applyPageColors\(pageColors\)\s*{[\s\S]*?this\.pdfViewer\.pageColors = pageColors;[\s\S]*?pageView\.pageColors = pageColors;[\s\S]*?pageView\.reset\(\);[\s\S]*?this\.pdfViewer\.update\(\);[\s\S]*?}/,
+    // Page colors are drawn into the canvas, so the canvas has to be dropped
+    // for a colour change to be visible. refresh() alone routes through
+    // PDFPageView.update(), which resets with keepCanvasWrapper and leaves the
+    // old bitmap in place - the bug that made clearing Sepia produce a white
+    // page with brown text.
+    'Theme changes must drop each page canvas, or the previous colours stay on screen.',
   );
   assert.match(
     viewerScriptText,

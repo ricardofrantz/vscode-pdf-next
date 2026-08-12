@@ -372,8 +372,8 @@ export function assertViewerContract({
     // survive on more than a tooltip.
     assert.match(
       viewerScriptSource,
-      /const CYCLE_THEME_VALUES = \['night', 'reader', 'inverted'\];/,
-      `${context}: the page-mode cycle must not land on plain pages.`,
+      /const CYCLE_THEME_VALUES = \['auto', 'night', 'reader', 'inverted'\];/,
+      `${context}: the page-mode cycle must include Clear, so plain white pages are one press away.`,
     );
     assert.match(
       viewerScriptSource,

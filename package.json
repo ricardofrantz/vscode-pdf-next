@@ -2,7 +2,7 @@
   "name": "pdf-preview-next",
   "displayName": "vscode-pdf Next",
   "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with true dark mode, the latest PDF.js (6.2.108) in a real worker thread, live reload for LaTeX/Typst including WSL, search, outline, and reliable preview state.",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "packageManager": "bun@1.3.13",
   "publisher": "RicardoFrantz",
   "engines": {
@@ -165,7 +165,7 @@
           "maximum": 10000
         },
         "pdf-preview.appearance.theme": {
-          "markdownDescription": "Preview appearance. `auto` follows VS Code colors for viewer chrome, `dark` uses dark viewer chrome while leaving PDF pages unchanged, `night` asks PDF.js to recolor rendered PDF pages for lower-eye-strain reading, `reader` renders pages with a warm e-reader sepia palette, `dark-pages` is a compatibility alias for `night`, and `inverted` applies full-page CSS inversion as a fallback for scanned or image-heavy PDFs. The toolbar button cycles Night, Reader, and Invert without landing on plain pages. To get back to plain white pages: Shift+click or right-click the toolbar button, run **vscode-pdf Next: Clear Page Mode**, or set this to `auto`.",
+          "markdownDescription": "Preview appearance. `auto` follows VS Code colors for viewer chrome and leaves pages plain white, `dark` uses dark viewer chrome while leaving PDF pages unchanged, `night` asks PDF.js to recolor rendered PDF pages for lower-eye-strain reading, `sepia` (formerly `reader`, which still works) renders pages with a warm e-reader palette, `dark-pages` is a compatibility alias for `night`, and `inverted` applies full-page CSS inversion as a fallback for scanned or image-heavy PDFs. The toolbar button cycles Clear, Night, Sepia and Invert, so plain white pages are always one press away; Shift+click or right-click it, or run **vscode-pdf Next: Clear Page Mode**, to jump straight back to Clear.",
           "type": "string",
           "scope": "resource",
           "default": "auto",
@@ -175,6 +175,7 @@
             "dark",
             "night",
             "reader",
+            "sepia",
             "dark-pages",
             "inverted"
           ]
