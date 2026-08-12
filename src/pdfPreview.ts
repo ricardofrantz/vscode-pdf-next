@@ -19,6 +19,31 @@ const DEFAULT_RELOAD_DEBOUNCE_MS = 800;
 const MAX_RELOAD_DELAY_MS = 5000;
 const UNC_POLL_INTERVAL_MS = 2000;
 
+// A PDF ends with the %%EOF marker, which the spec puts within the last 1024
+// bytes. A build rewrites the file over hundreds of milliseconds and the
+// watcher fires the moment it starts, so without this we hand the viewer a
+// truncated document, it fails to parse, and the reader gets an error banner
+// on the way to a perfectly good PDF. The debounce makes that less likely;
+// looking for the trailer makes it decidable.
+const PDF_TRAILER = Buffer.from('%%EOF', 'latin1');
+const PDF_TRAILER_WINDOW = 1024;
+const INCOMPLETE_READ_RETRY_MS = 120;
+const INCOMPLETE_READ_BUDGET_MS = 2000;
+
+export function pdfLooksComplete(data: Uint8Array): boolean {
+  if (data.byteLength < PDF_TRAILER.byteLength) {
+    return false;
+  }
+  const from = Math.max(0, data.byteLength - PDF_TRAILER_WINDOW);
+  return Buffer.from(data.buffer, data.byteOffset, data.byteLength)
+    .subarray(from)
+    .includes(PDF_TRAILER);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function normalizedReloadDebounceMs(value: unknown): number {
   if (!Number.isFinite(value)) {
     return DEFAULT_RELOAD_DEBOUNCE_MS;
@@ -514,13 +539,40 @@ export class PdfPreview extends Disposable {
     await this.openExternal();
   }
 
+  /// Read the file, and wait out a build that is still writing it.
+  ///
+  /// The watcher fires when the write *starts*, so the first read during a
+  /// rebuild often lands on a half-written PDF. Rather than shipping it and
+  /// letting the viewer fail, re-read until the trailer is there or the budget
+  /// runs out. Past the budget the bytes go through anyway: a file that never
+  /// grows a %%EOF is genuinely broken, and the viewer's error is the honest
+  /// answer for it.
+  private async readWhenComplete(
+    requestId: number,
+    startedAt: number,
+  ): Promise<Uint8Array> {
+    const uri = this.resource.with({ fragment: '', query: '' });
+    for (;;) {
+      const data = await vscode.workspace.fs.readFile(uri);
+      if (pdfLooksComplete(data) || this.isDisposed) {
+        return data;
+      }
+      if (Date.now() - startedAt >= INCOMPLETE_READ_BUDGET_MS) {
+        this.log(
+          `[read] #${requestId} still truncated after ${Date.now() - startedAt}ms; sending anyway`,
+        );
+        return data;
+      }
+      this.log(`[read] #${requestId} truncated (${data.byteLength} bytes), waiting`);
+      await delay(INCOMPLETE_READ_RETRY_MS);
+    }
+  }
+
   private async sendDocumentData(requestId: number): Promise<void> {
     const startedAt = Date.now();
     this.log(`[read] #${requestId} ${this.resource.toString()}`);
     try {
-      const data = await vscode.workspace.fs.readFile(
-        this.resource.with({ fragment: '', query: '' }),
-      );
+      const data = await this.readWhenComplete(requestId, startedAt);
       this.log(
         `[read] #${requestId} ${data.byteLength} bytes in ${Date.now() - startedAt}ms`,
       );

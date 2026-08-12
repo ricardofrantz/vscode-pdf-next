@@ -27,6 +27,18 @@ export function assertViewerContract({
     /executeCommand\(['"]vscode\.openWith['"],\s*this\.resource,\s*['"]default['"]/,
     `${context}: external-open action must not use VS Code's binary/text fallback editor.`,
   );
+  // A build rewrites the PDF over hundreds of milliseconds and the watcher
+  // fires when the write starts, so the bytes have to be checked, not timed.
+  assert.match(
+    webviewSource,
+    /readWhenComplete\([\s\S]*?pdfLooksComplete\(data\)[\s\S]*?INCOMPLETE_READ_BUDGET_MS/,
+    `${context}: a half-written PDF must be waited out, not sent to the viewer to fail on.`,
+  );
+  assert.match(
+    webviewSource,
+    /const data = await this\.readWhenComplete\(requestId, startedAt\)/,
+    `${context}: document bytes must go through the completeness check on the way to the webview.`,
+  );
   assert.match(
     webviewSource,
     /async openSource\([^)]*\)\s*{[\s\S]*?await this\.openExternal\(\);[\s\S]*?}/,
@@ -343,6 +355,16 @@ export function assertViewerContract({
       viewerScriptSource,
       /handleThumbnailKeydown\(event\)\s*{[\s\S]*?event\.key === 'ArrowUp'[\s\S]*?event\.key === 'ArrowDown'[\s\S]*?event\.key === 'Enter'[\s\S]*?currentItem\.click\(\)/,
       `${context}: thumbnail keyboard navigation must handle up/down focus and enter activation.`,
+    );
+    assert.match(
+      viewerScriptSource,
+      /class TidyPDFViewer extends PDFViewer \{[\s\S]*?_resetView\(\)[\s\S]*?pageView\.destroy\(\)[\s\S]*?super\._resetView\(\)/,
+      `${context}: page views must free their canvases on reset; PDF.js only drops the references, and this extension reloads on every rebuild.`,
+    );
+    assert.match(
+      viewerScriptSource,
+      /this\.pdfViewer = new TidyPDFViewer\(\{/,
+      `${context}: the viewer must be the canvas-freeing subclass, not PDFViewer itself.`,
     );
   }
 }

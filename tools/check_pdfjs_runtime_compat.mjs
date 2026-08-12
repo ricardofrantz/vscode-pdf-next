@@ -266,6 +266,17 @@ if (typeof Response !== 'undefined') {
   assert.deepEqual([...bytes], [1, 2, 3]);
 }
 
+// Local edits to the vendored runtime, applied by tools/update_pdfjs.mjs from
+// the "patch" list in update_pdfjs.jsonc. The update script fails loudly if a
+// pattern stops matching, but nothing stops someone restoring lib/pdfjs by
+// hand — so the shipped bytes are checked here too.
+assert.match(
+  viewerSource,
+  /const DEFAULT_CACHE_SIZE = 3;/,
+  'lib/pdfjs/web/pdf_viewer.mjs must keep 3 rendered pages, not the upstream 10; ' +
+    'rendered canvases dominate resident memory. Run bun run update:pdfjs to reapply.',
+);
+
 assertViewerContract({
   webviewSource,
   stylesSource,

@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.4.0 (2026/08/12)
+
+Three memory and reload fixes carried over from pdf-next, the standalone viewer
+that shares this engine. All three matter most in the same place: a LaTeX or
+Typst loop, where the document is reloaded hundreds of times in a session.
+
+- **Rendered canvases are freed on reload.** PDF.js empties its page list and
+  drops the page buffer without calling `destroy()` on the views it discards,
+  so every rendered canvas waited for the garbage collector. Harmless in a
+  viewer you open once; not what this extension does. The viewer is now a
+  subclass that frees them at the point we already know they are dead.
+- **Three rendered pages are kept instead of ten.** Canvases dominate resident
+  memory — one A4 page at 200% on a 2x display is about 30 MB of RGBA — and
+  upstream keeps ten alive. The viewer still grows its buffer to cover whatever
+  is visible, so this lowers the floor for pages you have scrolled past, not
+  the ones you are reading. The edit is applied by `bun run update:pdfjs` from
+  a `patch` list, fails the update loudly if PDF.js changes around it, and is
+  checked again against the shipped bytes.
+- **A half-written PDF is waited out, not shown as an error.** The file watcher
+  fires when a build *starts* writing, so the first read often landed on a
+  truncated file; the viewer failed to parse it, kept the previous version and
+  retried, flashing `Could not refresh PDF` on the way to a perfectly good
+  document. The bytes are now checked for the `%%EOF` trailer before they are
+  sent, and re-read for up to two seconds if it is missing. Past that the file
+  goes through anyway — one that never grows a trailer is genuinely broken, and
+  the error is the honest answer.
+
+Also fixed: `bun run update:pdfjs` could not extract its own download on
+Windows. GNU tar — which is what a shell resolves when Git's bin is on PATH —
+reads the leading `C:` of an absolute path as a remote host and fails with
+`Cannot connect to C: resolve failed`. It uses repo-relative paths now.
+
 ## 2.3.0 (2026/08/12)
 
 Viewer chrome rebuilt to look and behave like the rest of VS Code, plus five

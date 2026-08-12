@@ -38,6 +38,24 @@
     { "from": "iccs", "to": "lib/pdfjs/iccs" },
   ],
 
+  // Edits applied to the vendored runtime after copying. Each pattern must
+  // appear exactly once, so a PDF.js release that rewrites the surrounding
+  // code fails the update loudly instead of quietly dropping the patch and
+  // handing back the upstream default.
+  "patch": [
+    {
+      "file": "lib/pdfjs/web/pdf_viewer.mjs",
+      "find": "const DEFAULT_CACHE_SIZE = 10;",
+      "replace": "const DEFAULT_CACHE_SIZE = 3;",
+      // Rendered page canvases dominate resident memory: one A4 page at 200%
+      // on a 2x display is ~30 MB of RGBA. Upstream keeps ten of them alive.
+      // The viewer still grows the buffer to cover the visible pages
+      // (max(DEFAULT_CACHE_SIZE, 2 * visible + 1)), so this lowers the floor
+      // for the pages you have scrolled past, not the ones you are reading.
+      "reason": "Keep 3 rendered pages instead of 10; canvases dominate memory.",
+    },
+  ],
+
   // Small provenance file kept next to the vendored runtime.
   "versionFile": "lib/PDFJS_VERSION",
 }

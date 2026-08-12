@@ -44,6 +44,30 @@ async function copyEntry(sourceRoot, entry) {
   await fs.cp(source, destination, { recursive: true });
 }
 
+/// Apply the local edits to the freshly vendored runtime.
+///
+/// A patch that silently fails to apply is worse than no patch at all: the
+/// build keeps working, the contract that guards it is the only thing left
+/// standing, and whoever ran the upgrade has no idea a tuning decision was
+/// reverted. So an unmatched or ambiguous pattern is a hard error here.
+async function applyPatches(patches) {
+  for (const patch of patches) {
+    const target = repoPath(patch.file);
+    const source = await fs.readFile(target, 'utf8');
+    const occurrences = source.split(patch.find).length - 1;
+    if (occurrences !== 1) {
+      throw new Error(
+        `Patch for ${patch.file} matched ${occurrences} times, expected exactly 1.\n` +
+          `  looking for: ${patch.find}\n` +
+          `  reason: ${patch.reason}\n` +
+          'PDF.js has changed around this edit. Re-derive it before shipping.',
+      );
+    }
+    await fs.writeFile(target, source.replace(patch.find, patch.replace));
+    console.log(`Patched ${patch.file}: ${patch.reason}`);
+  }
+}
+
 async function main() {
   const config = parseJsonc(await fs.readFile(configPath, 'utf8'));
   const workDirectory = repoPath(config.workDirectory);
@@ -66,13 +90,18 @@ async function main() {
     throw new Error(`Integrity mismatch: ${packInfo.integrity} !== ${config.integrity}`);
   }
 
-  const tarball = path.join(workDirectory, packInfo.filename);
-  run('tar', ['-xzf', tarball, '-C', workDirectory]);
+  // Repo-relative, forward-slashed, and never absolute: run() already sets cwd
+  // to the repo root, and GNU tar — which is what a Windows shell resolves when
+  // Git's bin is on PATH — reads a leading `C:` as a remote host and fails with
+  // "Cannot connect to C: resolve failed".
+  const tarball = `${config.workDirectory}/${packInfo.filename}`;
+  run('tar', ['-xzf', tarball, '-C', config.workDirectory]);
 
   await Promise.all(
     config.remove.map((p) => fs.rm(repoPath(p), { recursive: true, force: true })),
   );
   await Promise.all(config.copy.map((entry) => copyEntry(sourceDirectory, entry)));
+  await applyPatches(config.patch ?? []);
 
   const versionContent = [
     `Version: ${config.version}`,

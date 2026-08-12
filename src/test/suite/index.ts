@@ -6,6 +6,7 @@ import { PDF_WEBVIEW_OPTIONS } from '../../extension';
 import {
   PDF_VIEWER_BODY,
   clearPdfPreviewViewState,
+  pdfLooksComplete,
   renderPdfPreviewHtml,
   resolvePdfLinkTarget,
   webviewLocalResourceRoots,
@@ -417,6 +418,36 @@ function assertDisposeAllKeepsDraining(): void {
   assert.deepStrictEqual(disposables, []);
 }
 
+/// The reload guard is only as good as its idea of "finished". A build writes a
+/// PDF front to back, so every prefix of a real file has to read as incomplete,
+/// and the whole file has to read as complete.
+function assertTruncatedPdfIsRecognised(): void {
+  const complete = minimalPdf();
+  assert.ok(
+    pdfLooksComplete(complete),
+    'A whole PDF must be recognised as complete.',
+  );
+
+  // Every prefix, at a coarse stride: a partial write is a prefix, and none of
+  // them may be mistaken for a finished file.
+  for (let length = 0; length < complete.byteLength; length += 7) {
+    assert.ok(
+      !pdfLooksComplete(complete.subarray(0, length)),
+      `A PDF truncated to ${length} of ${complete.byteLength} bytes must not read as complete.`,
+    );
+  }
+
+  // The marker lives in the trailer. A file that happens to contain %%EOF far
+  // from its end — inside a stream, say — is still unfinished.
+  const marker = Buffer.from('%%EOF', 'latin1');
+  const buried = Buffer.concat([marker, Buffer.alloc(4096, 0x20)]);
+  assert.ok(
+    !pdfLooksComplete(buried),
+    'A %%EOF outside the trailing window must not count as complete.',
+  );
+  assert.ok(!pdfLooksComplete(new Uint8Array()), 'Zero bytes are not a PDF.');
+}
+
 async function assertViewStateResetHelper(): Promise<void> {
   const resource = vscode.Uri.parse('file:///workspace/docs/paper.pdf#page=2');
   const updates: Array<[string, unknown]> = [];
@@ -587,6 +618,7 @@ export async function run(): Promise<void> {
   assertLinkAndPrintHelpers();
   assertWebviewHtmlHooks();
   assertDisposeAllKeepsDraining();
+  assertTruncatedPdfIsRecognised();
   await assertViewStateResetHelper();
 
   const extension = vscode.extensions.all.find(
