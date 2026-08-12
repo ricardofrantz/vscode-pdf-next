@@ -8,6 +8,7 @@ import {
   persistedViewStateOrUndefined,
   viewStateKey,
   type HostToViewerMessage,
+  type PageModeTheme,
   type ViewerEvent,
 } from './webviewContract';
 
@@ -177,9 +178,10 @@ export const PDF_VIEWER_BODY = `<body>
       </div>
       <div class="toolbar-group toolbar-spacer"></div>
       <div class="toolbar-group">
-        <button id="themeToggle" class="icon-button" type="button" title="Switch PDF page mode to Night" aria-label="Switch PDF page mode to Night" aria-pressed="false">
+        <button id="themeToggle" class="icon-button" type="button" title="Page mode 1 of 4: Clear — click for Night (Clear → Night → Invert → Sepia → …), Shift+click or right-click for plain pages" aria-label="Page mode 1 of 4: Clear — click for Night (Clear → Night → Invert → Sepia → …), Shift+click or right-click for plain pages" aria-pressed="false">
           <svg class="icon" width="16" height="16"><use href="#icon-theme"/></svg>
           <span class="label">Clear</span>
+          <span class="wheel" aria-hidden="true"></span>
         </button>
         <button id="outlineToggle" class="icon-button" type="button" title="Toggle document outline" aria-label="Toggle document outline" disabled>
           <svg class="icon" width="16" height="16"><use href="#icon-list-tree"/></svg>
@@ -417,6 +419,9 @@ export class PdfPreview extends Disposable {
           };
           void this.webviewEditor.webview.postMessage(message);
         }
+        if (event.affectsConfiguration('pdf-preview.appearance.theme')) {
+          this.sendPageMode();
+        }
         if (event.affectsConfiguration('pdf-preview.copy.autoCopySelection')) {
           const message: HostToViewerMessage = {
             type: 'copy-auto-selection-state',
@@ -474,6 +479,14 @@ export class PdfPreview extends Disposable {
               );
             break;
           case 'viewer-ready':
+            // The viewer has just (re)started, possibly from a stale HTML
+            // snapshot: tell it which page mode is actually current.
+            this.sendPageMode();
+            this.onViewerEvent({
+              ...parsedMessage,
+              resource: this.resource.toString(),
+            });
+            break;
           case 'viewer-error':
             this.onViewerEvent({
               ...parsedMessage,
@@ -568,6 +581,28 @@ export class PdfPreview extends Disposable {
       );
       await delay(INCOMPLETE_READ_RETRY_MS);
     }
+  }
+
+  /**
+   * Push the page mode the settings actually hold into the viewer.
+   *
+   * The webview is created with `retainContextWhenHidden: false`, so hiding
+   * the tab tears it down and showing it again re-runs the viewer from the
+   * HTML built when the editor opened. That HTML carries whatever page mode
+   * was current then, so without this the viewer quietly reverts to it.
+   */
+  private sendPageMode(): void {
+    const theme = vscode.workspace
+      .getConfiguration('pdf-preview', this.resource)
+      .get<string>('appearance.theme');
+    if (!theme) {
+      return;
+    }
+    const message: HostToViewerMessage = {
+      type: 'appearance-state',
+      theme: theme as PageModeTheme,
+    };
+    void this.webviewEditor.webview.postMessage(message);
   }
 
   private async sendDocumentData(requestId: number): Promise<void> {

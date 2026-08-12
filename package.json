@@ -2,7 +2,7 @@
   "name": "pdf-preview-next",
   "displayName": "vscode-pdf Next",
   "description": "Modern successor to vscode-pdf: fast, secure PDF viewing in VS Code with true dark mode, the latest PDF.js (6.2.108) in a real worker thread, live reload for LaTeX/Typst including WSL, search, outline, and reliable preview state.",
-  "version": "2.4.2",
+  "version": "2.4.3",
   "packageManager": "bun@1.3.13",
   "publisher": "RicardoFrantz",
   "engines": {

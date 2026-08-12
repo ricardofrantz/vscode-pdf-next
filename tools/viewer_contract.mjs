@@ -1,4 +1,82 @@
 import assert from 'node:assert/strict';
+import {
+  CLEAR_PAGE_MODE,
+  PAGE_MODES,
+  PAGE_MODE_COUNT,
+  nextPageMode,
+  pageColorsForPageMode,
+  pageModeLabel,
+} from '../lib/pageMode.mjs';
+
+/**
+ * Walk the wheel for real.
+ *
+ * The cycle order used to be checked by matching the source line that declared
+ * it — an assertion that passes whether or not the wheel works, and that has to
+ * be edited to agree with every change. These call the shipped functions.
+ */
+function assertPageModeWheel(context) {
+  assert.deepEqual(
+    PAGE_MODES.map((mode) => mode.label),
+    ['Clear', 'Night', 'Invert', 'Sepia'],
+    `${context}: the page-mode wheel must read Clear, Night, Invert, Sepia.`,
+  );
+
+  // From every stop, and from every legacy alias of one, pressing the button
+  // PAGE_MODE_COUNT times must land back where it started, having passed
+  // through Clear exactly once on the way.
+  for (const start of PAGE_MODES.flatMap((mode) => [
+    mode.value,
+    ...mode.aliases,
+  ])) {
+    const seen = [];
+    let theme = start;
+    for (let press = 0; press < PAGE_MODE_COUNT; press += 1) {
+      theme = nextPageMode(theme);
+      seen.push(pageModeLabel(theme));
+    }
+    assert.equal(
+      pageModeLabel(theme),
+      pageModeLabel(start),
+      `${context}: the wheel must return to ${start} after ${PAGE_MODE_COUNT} presses; saw ${seen.join(' → ')}.`,
+    );
+    assert.ok(
+      seen.includes('Clear'),
+      `${context}: Clear must be a stop on the wheel from ${start}; saw ${seen.join(' → ')}.`,
+    );
+    assert.equal(
+      new Set(seen).size,
+      PAGE_MODE_COUNT,
+      `${context}: the wheel must visit every mode exactly once from ${start}; saw ${seen.join(' → ')}.`,
+    );
+  }
+
+  assert.equal(
+    pageColorsForPageMode(CLEAR_PAGE_MODE),
+    null,
+    `${context}: Clear must render pages as authored, with no page colours.`,
+  );
+  assert.deepEqual(
+    pageColorsForPageMode('night'),
+    { background: '#1b1b1b', foreground: '#d6d1c4' },
+    `${context}: Night must map to dark page colours.`,
+  );
+  assert.deepEqual(
+    pageColorsForPageMode('reader'),
+    { background: '#f4ecd8', foreground: '#5b4636' },
+    `${context}: Sepia must map to distinct warm page colours.`,
+  );
+  assert.deepEqual(
+    pageColorsForPageMode('sepia'),
+    pageColorsForPageMode('reader'),
+    `${context}: the legacy 'sepia' settings value must behave as Sepia.`,
+  );
+  assert.deepEqual(
+    pageColorsForPageMode('dark-pages'),
+    pageColorsForPageMode('night'),
+    `${context}: the legacy 'dark-pages' settings value must behave as Night.`,
+  );
+}
 
 const toolbarButtonIds = [
   'previous',
@@ -61,9 +139,28 @@ export function assertViewerContract({
   );
   assert.match(
     webviewSource,
-    /<button id="themeToggle"[^>]*title="Switch PDF page mode to Night"[^>]*aria-label="Switch PDF page mode to Night"[^>]*aria-pressed="false"[^>]*>[\s\S]*?<use href="#icon-theme"\/>[\s\S]*?<span class="label">Clear<\/span>/,
-    `${context}: theme cycle button must expose a pressed state, next-mode label, and icon.`,
+    /<button id="themeToggle"[^>]*title="[^"]*"[^>]*aria-label="[^"]*"[^>]*aria-pressed="false"[^>]*>[\s\S]*?<use href="#icon-theme"\/>[\s\S]*?<span class="label">Clear<\/span>[\s\S]*?<span class="wheel"[^>]*><\/span>/,
+    `${context}: page-mode button must expose a pressed state, the current mode's label, the icon, and the wheel position.`,
   );
+  // The initial markup is what a reloading webview paints before any script
+  // runs, so it has to start where the wheel starts and name the whole wheel.
+  const initialThemeButton = webviewSource.match(
+    /<button id="themeToggle"[^>]*aria-label="([^"]*)"/,
+  );
+  assert.ok(
+    initialThemeButton,
+    `${context}: page-mode button must carry an aria-label.`,
+  );
+  assert.ok(
+    initialThemeButton[1].includes(`1 of ${PAGE_MODE_COUNT}`),
+    `${context}: page-mode button must open on the first stop of a ${PAGE_MODE_COUNT}-stop wheel; got "${initialThemeButton[1]}".`,
+  );
+  for (const mode of PAGE_MODES) {
+    assert.ok(
+      initialThemeButton[1].includes(mode.label),
+      `${context}: page-mode button must name every stop on the wheel; "${mode.label}" is missing from "${initialThemeButton[1]}".`,
+    );
+  }
   assert.match(
     webviewSource,
     /<div class="sidebar-tabs" role="tablist" aria-label="Sidebar panels">[\s\S]*?<button id="outlinePanelTab"[^>]*role="tab"[^>]*aria-selected="true"[^>]*aria-controls="outlinePanel">Outline<\/button>[\s\S]*?<button id="thumbnailPanelTab"[^>]*role="tab"[^>]*aria-selected="false"[^>]*aria-controls="thumbnailPanel">Thumbnails<\/button>/,
@@ -366,14 +463,23 @@ export function assertViewerContract({
       /this\.pdfViewer = new TidyPDFViewer\(\{/,
       `${context}: the viewer must be the canvas-freeing subclass, not PDFViewer itself.`,
     );
-    // Plain white pages are deliberately not a stop in the cycle - landing
-    // on white every third press is what made the cycle irritating. That
-    // makes getting back to them a feature in its own right, and it has to
-    // survive on more than a tooltip.
+    // Clear is a stop on the wheel; the shortcut back to plain pages stays as
+    // well, for anyone who does not want to press through the rest.
+    assertPageModeWheel(context);
     assert.match(
       viewerScriptSource,
-      /const CYCLE_THEME_VALUES = \['auto', 'night', 'inverted', 'reader'\];/,
-      `${context}: the page-mode cycle must include Clear, so plain white pages are one press away.`,
+      /from '\.\/pageMode\.mjs'/,
+      `${context}: the viewer must import the wheel rather than restating it.`,
+    );
+    assert.doesNotMatch(
+      viewerScriptSource,
+      /const CYCLE_THEME_VALUES =/,
+      `${context}: a second copy of the wheel order is what kept it drifting.`,
+    );
+    assert.match(
+      viewerScriptSource,
+      /message\.type === 'appearance-state'[\s\S]*?this\.setPageMode\(message\.theme\)/,
+      `${context}: a reloaded webview must take the live page mode from the host, not the stale one baked into its HTML.`,
     );
     assert.match(
       viewerScriptSource,

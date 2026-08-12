@@ -9,17 +9,20 @@ export interface PersistedViewState {
   sidebarPanel?: 'outline' | 'thumbnails';
 }
 
+/** Every settings value the page-mode wheel accepts; see lib/pageMode.mjs. */
+export type PageModeTheme =
+  | 'auto'
+  | 'light'
+  | 'dark'
+  | 'night'
+  | 'reader'
+  | 'dark-pages'
+  | 'inverted';
+
 export type ViewerToHostMessage =
   | {
       type: 'appearance-theme';
-      theme:
-        | 'auto'
-        | 'light'
-        | 'dark'
-        | 'night'
-        | 'reader'
-        | 'dark-pages'
-        | 'inverted';
+      theme: PageModeTheme;
     }
   | { type: 'copy-text'; text: string }
   | { type: 'open-external' }
@@ -40,6 +43,11 @@ export type ViewerToHostMessage =
   | { type: 'viewer-error'; message: string };
 
 export type HostToViewerMessage =
+  // A webview reload restarts the viewer from the HTML it was created with,
+  // which carries the page mode as it was when the editor opened. Without a
+  // re-seed the viewer silently reverts to that snapshot and the mode the user
+  // cycled to is lost - which is what made Clear look unreachable.
+  | { type: 'appearance-state'; theme: PageModeTheme }
   | { type: 'auto-reload-state'; enabled: boolean }
   // Back to plain white pages from Night, Reader or Invert. The toolbar
   // button deliberately does not cycle through plain pages, so clearing

@@ -1290,20 +1290,18 @@ export async function run(): Promise<void> {
     /document\.readyState === 'loading'/,
     'viewer should start immediately if DOMContentLoaded already fired',
   );
+  // The wheel itself is tested by calling it, in assertViewerContract; these
+  // only check that the viewer still gets its wheel from the shared module
+  // instead of growing a second copy, which is how it drifted before.
   assert.match(
     viewerScriptText,
-    /const THEME_VALUES = new Set\(\[\s*['"]auto['"],\s*['"]light['"],\s*['"]dark['"],\s*['"]night['"],\s*['"]reader['"],\s*['"]sepia['"],\s*['"]dark-pages['"],\s*['"]inverted['"],\s*\]\)/,
-    'Viewer theme contract must recognize night, reader/sepia, and dark-pages.',
+    /from '\.\/pageMode\.mjs'/,
+    'Viewer must import the page-mode wheel rather than restating it.',
   );
-  assert.match(
+  assert.doesNotMatch(
     viewerScriptText,
-    /function pageColorsForTheme\(theme\)\s*{[\s\S]*?theme === ['"]night['"] \|\| theme === ['"]dark-pages['"][\s\S]*?background: ['"]#1b1b1b['"], foreground: ['"]#d6d1c4['"][\s\S]*?theme === ['"]reader['"] \|\| theme === ['"]sepia['"][\s\S]*?background: ['"]#f4ecd8['"], foreground: ['"]#5b4636['"]/,
-    'Night must map to dark pageColors and reader to distinct sepia pageColors.',
-  );
-  assert.match(
-    viewerScriptText,
-    /const CYCLE_THEME_VALUES = \[['"]auto['"], ['"]night['"], ['"]inverted['"], ['"]reader['"]\]/,
-    'Theme cycle must include Clear so plain white pages are always one press away.',
+    /const CYCLE_THEME_VALUES =|const THEME_LABELS =/,
+    'A second copy of the wheel order or its labels is what kept it drifting.',
   );
   assert.match(
     viewerScriptText,
@@ -1332,13 +1330,25 @@ export async function run(): Promise<void> {
   );
   assert.match(
     viewerScriptText,
-    /pageColors: pageColorsForTheme\(this\.appearance\.theme\)/,
+    /pageColors: pageColorsForPageMode\(this\.appearance\.theme\)/,
     'PDFViewer must receive pageColors for night mode.',
   );
   assert.match(
     viewerScriptText,
-    /cyclePageTheme\(\{ clear = false \} = \{\}\)\s*{[\s\S]*?clear\s*\?\s*this\.clearTheme\s*:\s*nextCycleTheme\(this\.appearance\.theme\)[\s\S]*?this\.applyPageColors\(pageColorsForTheme\(this\.appearance\.theme\)\)[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
-    'Theme cycle must clear on demand and re-render in place, falling back to a view-state-preserving reload.',
+    /cyclePageTheme\(\{ clear = false \} = \{\}\)\s*{[\s\S]*?clear\s*\?\s*clearedPageMode\(this\.appearance\.theme\)\s*:\s*nextPageMode\(this\.appearance\.theme\)[\s\S]*?this\.setPageMode\(theme, \{ persist: true \}\);[\s\S]*?}/,
+    'Cycling and clearing must both go through the single page-mode setter.',
+  );
+  assert.match(
+    viewerScriptText,
+    /setPageMode\(theme, \{ persist = false \} = \{\}\)\s*{[\s\S]*?this\.applyPageColors\(pageColorsForPageMode\(theme\)\)[\s\S]*?this\.loadDocument\(\{ restoreView: true, retryOnFailure: true \}\);[\s\S]*?}/,
+    'The page-mode setter must re-render in place, falling back to a view-state-preserving reload.',
+  );
+  // A re-seed from the host must not be echoed back to the setting: a webview
+  // restarted from stale HTML would otherwise overwrite the live value.
+  assert.match(
+    viewerScriptText,
+    /if \(persist\) {\s*vscode\.postMessage\(\{\s*type: 'appearance-theme',/,
+    'Only a user action may persist the page mode.',
   );
   assert.match(
     viewerScriptText,

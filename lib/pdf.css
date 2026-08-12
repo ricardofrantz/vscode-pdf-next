@@ -616,6 +616,29 @@ body.page-gap-wide {
   );
 }
 
+/* The page-mode wheel, drawn on the toolbar button: one dot per stop with the
+   current one filled. Four stops and a one-word label made it impossible to
+   tell a press that advanced the wheel from a press that did nothing. */
+.icon-button .wheel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.icon-button .wheel-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.32;
+}
+
+.icon-button .wheel-dot.is-current {
+  opacity: 1;
+  transform: scale(1.34);
+}
+
 body.theme-reader #viewerContainer {
   background: color-mix(
     in srgb,

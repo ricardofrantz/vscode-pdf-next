@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.4.3 (2026/08/12)
+
+Clear came back on the wheel and then went away again, because nothing was
+holding it there. The viewer is created with `retainContextWhenHidden: false`,
+so hiding the tab tears the webview down, and showing it again restarts the
+viewer from the HTML it was built with — HTML that carries the page mode as it
+was when the editor opened. Cycling to Clear updated the setting and the pages,
+then the next reload quietly restored the snapshot. With `sepia` saved, every
+reload put sepia back, which is what "it never goes back to Clear" was.
+
+- **The host re-seeds the viewer with the live page mode** on every viewer
+  start and whenever the setting changes, so a reloaded webview can no longer
+  revert to a stale snapshot. A re-seed does not write back to the setting;
+  only pressing the button does.
+- **The wheel has one definition.** `lib/pageMode.mjs` holds the order, the
+  labels, the page colours and the legacy setting names, and the viewer imports
+  it. Order lived in four places before, which is why every fix moved one of
+  them and left the others behind.
+- **Cycling, clearing and re-seeding go through one setter**, so they cannot
+  drift apart.
+- **The wheel is visible.** The toolbar button shows a dot per stop with the
+  current one filled, and the tooltip reads "Page mode 3 of 4: Invert — click
+  for Sepia (Clear → Night → Invert → Sepia → …)". One word and a hidden
+  tooltip made a press that did nothing look identical to a press that worked.
+- **The cycle is tested by running it**, not by matching the source line that
+  declares it. The old assertions restated the code, so they passed whether or
+  not the wheel worked and had to be rewritten to agree with every change.
+
 ## 2.4.2 (2026/08/12)
 
 Clearing a page mode did not clear it. Page colours are drawn into the page
