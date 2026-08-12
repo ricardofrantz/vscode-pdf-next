@@ -847,10 +847,14 @@ export async function run(): Promise<void> {
     /<button id="openSource"[^>]*>[\s\S]*?<span class="label">Source<\/span>/,
     'External-open toolbar button should not be labeled Source.',
   );
+  // The page-mode button's exact wording is asserted once, in
+  // tools/viewer_contract.mjs, against the wheel it comes from. A second copy
+  // of the sentence here is what broke the v2.4.3 release: the contract was
+  // updated, this was not, and neither file mentions the other.
   assert.match(
     webviewSourceText,
-    /<button id="themeToggle"[^>]*title="Switch PDF page mode to Night"[^>]*aria-label="Switch PDF page mode to Night"[^>]*aria-pressed="false"[^>]*>[\s\S]*?<use href="#icon-theme"\/>[\s\S]*?<span class="label">Clear<\/span>/,
-    'Theme cycle button must expose a pressed state, next-mode label, and icon.',
+    /<button id="themeToggle"[^>]*aria-pressed="false"[^>]*>[\s\S]*?<use href="#icon-theme"\/>[\s\S]*?<span class="label">Clear<\/span>[\s\S]*?<span class="wheel"[^>]*><\/span>/,
+    'Page-mode button must expose a pressed state, the current label, the icon, and the wheel position.',
   );
   assert.match(
     webviewSourceText,
