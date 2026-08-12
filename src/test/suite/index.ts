@@ -740,6 +740,7 @@ export async function run(): Promise<void> {
     ),
   );
   assert.deepStrictEqual([...commandIds].sort(), [
+    'pdf-preview.clearPageMode',
     'pdf-preview.openPreview',
     'pdf-preview.openSource',
     'pdf-preview.print',
@@ -755,6 +756,7 @@ export async function run(): Promise<void> {
     extension.packageJSON.activationEvents;
   if (activationEvents !== undefined) {
     for (const expectedEvent of [
+      'onCommand:pdf-preview.clearPageMode',
       'onCommand:pdf-preview.openPreview',
       'onCommand:pdf-preview.openSource',
       'onCommand:pdf-preview.print',

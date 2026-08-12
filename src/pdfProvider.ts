@@ -77,6 +77,10 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
     );
   }
 
+  public async clearPageModeForActivePreview(): Promise<void> {
+    await this.withActivePreview((preview) => preview.clearPageMode());
+  }
+
   public async resetViewStateForActivePreview(): Promise<void> {
     await this.withActivePreview(async (preview) => {
       await preview.resetViewState();

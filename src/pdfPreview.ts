@@ -641,6 +641,19 @@ export class PdfPreview extends Disposable {
     }
   }
 
+  /// Back to plain white pages, whatever page mode is on.
+  ///
+  /// The toolbar button cycles Night, Reader and Invert without stopping on
+  /// plain pages — landing on white every third press was the thing that made
+  /// the cycle annoying. That left Shift+click as the only way back, which is
+  /// not a thing anyone finds. This is the same action with a name.
+  public clearPageMode(): void {
+    if (!this.isDisposed) {
+      const message: HostToViewerMessage = { type: 'clear-page-mode' };
+      void this.webviewEditor.webview.postMessage(message);
+    }
+  }
+
   public async resetViewState(): Promise<void> {
     await clearPdfPreviewViewState(this.workspaceState, this.resource);
     if (!this.isDisposed) {

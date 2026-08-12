@@ -366,5 +366,24 @@ export function assertViewerContract({
       /this\.pdfViewer = new TidyPDFViewer\(\{/,
       `${context}: the viewer must be the canvas-freeing subclass, not PDFViewer itself.`,
     );
+    // Plain white pages are deliberately not a stop in the cycle - landing
+    // on white every third press is what made the cycle irritating. That
+    // makes getting back to them a feature in its own right, and it has to
+    // survive on more than a tooltip.
+    assert.match(
+      viewerScriptSource,
+      /const CYCLE_THEME_VALUES = \['night', 'reader', 'inverted'\];/,
+      `${context}: the page-mode cycle must not land on plain pages.`,
+    );
+    assert.match(
+      viewerScriptSource,
+      /themeToggle\.addEventListener\('contextmenu'[\s\S]*?cyclePageTheme\({ clear: true }\)/,
+      `${context}: right-clicking the page-mode button must restore plain white pages.`,
+    );
+    assert.match(
+      viewerScriptSource,
+      /message\.type === 'clear-page-mode'[\s\S]*?cyclePageTheme\({ clear: true }\)/,
+      `${context}: the Clear Page Mode command must reach the viewer.`,
+    );
   }
 }

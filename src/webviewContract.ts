@@ -41,6 +41,10 @@ export type ViewerToHostMessage =
 
 export type HostToViewerMessage =
   | { type: 'auto-reload-state'; enabled: boolean }
+  // Back to plain white pages from Night, Reader or Invert. The toolbar
+  // button deliberately does not cycle through plain pages, so clearing
+  // needs a route that does not depend on knowing about Shift+click.
+  | { type: 'clear-page-mode' }
   | { type: 'copy-auto-selection-state'; enabled: boolean }
   // The document bytes travel over postMessage instead of a webview resource
   // fetch: the webview service worker cannot serve some filesystems the

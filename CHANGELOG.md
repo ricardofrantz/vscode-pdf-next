@@ -2,6 +2,21 @@
 
 ## 2.4.0 (2026/08/12)
 
+Plain white pages are reachable again. The toolbar button cycles Night,
+Reader and Invert without stopping on plain pages — landing on white every
+third press was what made the cycle irritating — but that left Shift+click as
+the only way back, which is not something anyone finds. Getting back to plain
+white pages now has three routes that do not depend on a tooltip:
+
+- **Right-click the page-mode button.** No modifier to know about.
+- **Command Palette: `vscode-pdf Next: Clear Page Mode (Plain White Pages)`**,
+  which is also bindable to a key.
+- Shift+click or Alt+click the button, as before, and the setting
+  `pdf-preview.appearance.theme: auto`.
+
+The button tooltip now names the escape hatch and what it gets you rather
+than just saying "clear".
+
 Three memory and reload fixes carried over from pdf-next, the standalone viewer
 that shares this engine. All three matter most in the same place: a LaTeX or
 Typst loop, where the document is reloaded hundreds of times in a session.

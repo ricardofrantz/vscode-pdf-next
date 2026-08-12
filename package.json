@@ -80,6 +80,10 @@
         "title": "vscode-pdf Next: Print Directly to Default Printer"
       },
       {
+        "command": "pdf-preview.clearPageMode",
+        "title": "vscode-pdf Next: Clear Page Mode (Plain White Pages)"
+      },
+      {
         "command": "pdf-preview.resetViewState",
         "title": "vscode-pdf Next: Reset View State"
       }
@@ -161,7 +165,7 @@
           "maximum": 10000
         },
         "pdf-preview.appearance.theme": {
-          "markdownDescription": "Preview appearance. `auto` follows VS Code colors for viewer chrome, `dark` uses dark viewer chrome while leaving PDF pages unchanged, `night` asks PDF.js to recolor rendered PDF pages for lower-eye-strain reading, `reader` renders pages with a warm e-reader sepia palette, `dark-pages` is a compatibility alias for `night`, and `inverted` applies full-page CSS inversion as a fallback for scanned or image-heavy PDFs. The toolbar button cycles Night, Reader, and Invert without landing on plain pages; Shift+click it (or set this to `auto`) to go back to plain pages.",
+          "markdownDescription": "Preview appearance. `auto` follows VS Code colors for viewer chrome, `dark` uses dark viewer chrome while leaving PDF pages unchanged, `night` asks PDF.js to recolor rendered PDF pages for lower-eye-strain reading, `reader` renders pages with a warm e-reader sepia palette, `dark-pages` is a compatibility alias for `night`, and `inverted` applies full-page CSS inversion as a fallback for scanned or image-heavy PDFs. The toolbar button cycles Night, Reader, and Invert without landing on plain pages. To get back to plain white pages: Shift+click or right-click the toolbar button, run **vscode-pdf Next: Clear Page Mode**, or set this to `auto`.",
           "type": "string",
           "scope": "resource",
           "default": "auto",
