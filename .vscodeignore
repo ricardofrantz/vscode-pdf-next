@@ -1,3 +1,9 @@
+# Everything the extension runs is bundled into dist/ by esbuild, so nothing
+# from node_modules belongs in the VSIX - scan_vsix.mjs forbids it outright.
+# Without this line, whether it ships depends on whether keytar (an optional
+# dependency of @vscode/vsce) happened to install, which is why CI passed one
+# run and failed the next with no dependency change.
+node_modules/**
 .vscode/**
 .vscode-test/**
 .github/**

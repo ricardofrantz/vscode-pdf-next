@@ -222,7 +222,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "update:pdfjs": "node ./tools/update_pdfjs.mjs",
-    "package": "vsce package",
+    "package": "vsce package --no-dependencies",
     "package:scan": "node ./tools/scan_vsix.mjs",
     "package:scan:test": "node ./tools/test_scan_vsix.mjs"
   },
