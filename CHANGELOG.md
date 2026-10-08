@@ -8,10 +8,12 @@
   decoders. The viewer now decodes these images with WebAssembly. The CSP
   adds `'wasm-unsafe-eval'` and still has no `'unsafe-eval'`. The package
   ships two `.wasm` files, and the release scanner rejects any other.
-- **A page canvas holds at most 4,194,304 pixels (16.8 MB).** PDF.js draws a
-  larger page at low resolution and redraws only the visible region sharp.
-  At 200% zoom on a 2x display, the canvases of a dense page fell from 14.2
-  to 3.4 megapixels, which is 57 MB to 14 MB.
+- **A full-page canvas holds at most 4,194,304 pixels (16.8 MB).** PDF.js
+  draws a larger page at low resolution and adds a second canvas for the
+  visible region at full resolution. The window size sets the size of that
+  second canvas. In a 976 × 661 test window at 200% zoom on a 2x display,
+  the canvases of a dense page fell from 14.2 to 3.4 megapixels, which is
+  57 MB to 14 MB.
 - **The pages redraw when the display density changes.** After a VS Code
   zoom, the pages kept their old resolution and looked blurred.
 - **Two engine patches came over from pdf-next.** The sharp detail canvas
