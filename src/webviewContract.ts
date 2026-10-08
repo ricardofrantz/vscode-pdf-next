@@ -39,6 +39,8 @@ export type ViewerToHostMessage =
       workerType: 'worker' | 'fake';
       durationMs: number;
       fetchMs: number;
+      // Sent only when the host asks for it (the integration tests).
+      pageInk?: number;
     }
   | { type: 'viewer-error'; message: string };
 
@@ -73,6 +75,7 @@ export type ViewerEvent =
       workerType: 'worker' | 'fake';
       durationMs: number;
       fetchMs: number;
+      pageInk?: number;
     }
   | { type: 'viewer-error'; resource: string; message: string };
 
@@ -225,14 +228,18 @@ export function parseViewerToHostMessage(
 
     case 'viewer-ready':
       if (
-        hasExpectedKeys(message, [
-          'type',
-          'pagesCount',
-          'pageNumber',
-          'workerType',
-          'durationMs',
-          'fetchMs',
-        ]) &&
+        hasExpectedKeys(
+          message,
+          [
+            'type',
+            'pagesCount',
+            'pageNumber',
+            'workerType',
+            'durationMs',
+            'fetchMs',
+          ],
+          ['pageInk'],
+        ) &&
         typeof message.pagesCount === 'number' &&
         Number.isInteger(message.pagesCount) &&
         message.pagesCount > 0 &&
@@ -245,7 +252,11 @@ export function parseViewerToHostMessage(
         message.durationMs >= 0 &&
         typeof message.fetchMs === 'number' &&
         Number.isInteger(message.fetchMs) &&
-        message.fetchMs >= 0
+        message.fetchMs >= 0 &&
+        (message.pageInk === undefined ||
+          (typeof message.pageInk === 'number' &&
+            message.pageInk >= 0 &&
+            message.pageInk <= 1))
       ) {
         return {
           type: 'viewer-ready',
@@ -254,6 +265,9 @@ export function parseViewerToHostMessage(
           workerType: message.workerType,
           durationMs: message.durationMs,
           fetchMs: message.fetchMs,
+          ...(message.pageInk === undefined
+            ? {}
+            : { pageInk: message.pageInk }),
         };
       }
       break;

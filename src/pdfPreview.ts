@@ -395,6 +395,7 @@ export class PdfPreview extends Disposable {
     private readonly workspaceState: vscode.Memento,
     private readonly onViewerEvent: (event: ViewerEvent) => void = () => {},
     private readonly log: (line: string) => void = () => {},
+    private readonly reportPageInk = false,
   ) {
     super();
     const config = vscode.workspace.getConfiguration('pdf-preview');
@@ -834,6 +835,7 @@ export class PdfPreview extends Disposable {
       initialViewState: persistedViewStateOrUndefined(
         this.workspaceState.get(viewStateKey(this.resource)),
       ),
+      reportPageInk: this.reportPageInk,
     };
 
     const csp = [

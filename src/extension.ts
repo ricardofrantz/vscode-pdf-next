@@ -10,6 +10,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const provider = new PdfCustomProvider(
     context.extensionUri,
     context.workspaceState,
+    context.extensionMode === vscode.ExtensionMode.Test,
   );
   if (context.extensionMode === vscode.ExtensionMode.Test) {
     context.subscriptions.push(

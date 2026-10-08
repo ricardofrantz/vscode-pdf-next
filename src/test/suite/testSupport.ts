@@ -75,6 +75,8 @@ export function minimalPdf(label = 'PDF Preview Next'): Uint8Array {
 
 export async function writePdfFixture(
   extension: vscode.Extension<unknown>,
+  name = 'minimal.pdf',
+  bytes: Uint8Array = minimalPdf(),
 ): Promise<vscode.Uri> {
   // An override reruns the viewer fixture tests against another filesystem,
   // e.g. a WSL UNC path such as \\wsl.localhost\Ubuntu\home\... to reproduce
@@ -101,8 +103,8 @@ export async function writePdfFixture(
     ? vscode.Uri.file(path.join(overrideDir, 'test-fixtures'))
     : vscode.Uri.joinPath(extension.extensionUri, '.work', 'test-fixtures');
   await vscode.workspace.fs.createDirectory(fixtureDir);
-  const fixtureUri = vscode.Uri.joinPath(fixtureDir, 'minimal.pdf');
-  await vscode.workspace.fs.writeFile(fixtureUri, minimalPdf());
+  const fixtureUri = vscode.Uri.joinPath(fixtureDir, name);
+  await vscode.workspace.fs.writeFile(fixtureUri, bytes);
   // Record where the fixture actually went: extension-host console output is
   // not reliably forwarded to the test runner's stdout, and CI debugging of
   // filesystem-override runs (WSL UNC paths) needs ground truth on disk.

@@ -184,6 +184,41 @@ function assertWebviewContract(): void {
       fetchMs: 300,
     },
   );
+  assert.deepStrictEqual(
+    parseViewerToHostMessage({
+      type: 'viewer-ready',
+      pagesCount: 1,
+      pageNumber: 1,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
+      pageInk: 0.25,
+    }),
+    {
+      type: 'viewer-ready',
+      pagesCount: 1,
+      pageNumber: 1,
+      workerType: 'worker',
+      durationMs: 1200,
+      fetchMs: 300,
+      pageInk: 0.25,
+    },
+  );
+  for (const pageInk of [-0.1, 1.5, Number.NaN, '0.5']) {
+    assert.strictEqual(
+      parseViewerToHostMessage({
+        type: 'viewer-ready',
+        pagesCount: 1,
+        pageNumber: 1,
+        workerType: 'worker',
+        durationMs: 1200,
+        fetchMs: 300,
+        pageInk,
+      }),
+      undefined,
+      `viewer-ready with pageInk ${String(pageInk)} must be rejected`,
+    );
+  }
   assert.strictEqual(
     parseViewerToHostMessage({
       type: 'viewer-ready',
@@ -574,6 +609,69 @@ async function waitForViewerEvent(
     assert.fail(`PDF viewer failed to load fixture: ${event.message}`);
   }
   return event;
+}
+
+async function assertScannedImagesAreDrawn(
+  extension: vscode.Extension<unknown>,
+): Promise<void> {
+  // Each fixture is one A4 page that one image fills. PDF.js decodes CCITT
+  // fax and JBIG2 images with jbig2.wasm, and JPEG 2000 images with
+  // openjpeg.wasm. When a decoder does not load, PDF.js leaves the image out
+  // and the load still succeeds, so only the drawn pixels show the fault.
+  // pageInk is the fraction of page pixels with a channel below 200 of 255.
+  // ccitt.pdf: a black rectangle and a black disc on white, 400 x 300 px,
+  // Pillow TIFF group4 output; 46 % of the image is black.
+  // jpeg2000.pdf: left half blue, right half white, 40 x 30 px, lossless
+  // JP2 from Pillow and OpenJPEG.
+  // Poppler gives 0.462 and 0.498 for the two pages.
+  const expectations = [
+    { name: 'ccitt.pdf', pageInk: 0.46 },
+    { name: 'jpeg2000.pdf', pageInk: 0.5 },
+  ];
+  // Write every fixture before the first preview opens. A file that appears
+  // while its preview loads makes the watcher start a second load.
+  const fixtures = [];
+  for (const expected of expectations) {
+    const bytes = await vscode.workspace.fs.readFile(
+      vscode.Uri.joinPath(
+        extension.extensionUri,
+        'src',
+        'test',
+        'fixtures',
+        expected.name,
+      ),
+    );
+    fixtures.push({
+      ...expected,
+      uri: await writePdfFixture(extension, expected.name, bytes),
+    });
+  }
+  for (const expected of fixtures) {
+    const fixtureUri = expected.uri;
+    const openedAt = Date.now();
+    await vscode.commands.executeCommand(
+      'vscode.openWith',
+      fixtureUri,
+      'pdf-preview-next.preview',
+      {
+        preserveFocus: false,
+        viewColumn: vscode.ViewColumn.Two,
+      },
+    );
+    // Allow a slow webview start on a busy machine.
+    const event = await waitForViewerEvent(fixtureUri, 60000, openedAt);
+    assert.strictEqual(event.type, 'viewer-ready');
+    const { pageInk } = event;
+    assert.ok(
+      pageInk !== undefined,
+      `${expected.name}: viewer-ready must carry pageInk in test mode.`,
+    );
+    assert.ok(
+      Math.abs(pageInk - expected.pageInk) < 0.05,
+      `${expected.name}: expected a page ink of about ${expected.pageInk}, ` +
+        `got ${pageInk.toFixed(3)}. A decoder that does not load leaves the page white.`,
+    );
+  }
 }
 
 async function assertFileWatcherReloadDoesNotStealFocus(
@@ -1675,6 +1773,8 @@ export async function run(): Promise<void> {
   assert.strictEqual(reloadEvent.pagesCount, 1);
   assert.strictEqual(reloadEvent.pageNumber, 1);
   assert.strictEqual(reloadEvent.workerType, 'worker');
+
+  await assertScannedImagesAreDrawn(extension);
 
   return Promise.resolve();
 }

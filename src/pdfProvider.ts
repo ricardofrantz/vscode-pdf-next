@@ -17,6 +17,9 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
   constructor(
     private readonly extensionRoot: vscode.Uri,
     private readonly workspaceState: vscode.Memento,
+    // The integration tests read pageInk from viewer-ready to check that a
+    // page shows its content.
+    private readonly reportPageInk = false,
   ) {
     this.log = vscode.window.createOutputChannel('vscode-pdf Next');
   }
@@ -40,6 +43,7 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
       (line) => {
         this.log.appendLine(line);
       },
+      this.reportPageInk,
     );
     const updateActivePreview = (): void => {
       if (webviewEditor.active) {
