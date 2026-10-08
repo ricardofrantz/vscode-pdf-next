@@ -648,7 +648,8 @@ async function assertScannedImagesAreDrawn(
   }
   for (const expected of fixtures) {
     const fixtureUri = expected.uri;
-    const openedAt = Date.now();
+    // The same clock as receivedAt in the provider.
+    const openedAt = performance.now();
     await vscode.commands.executeCommand(
       'vscode.openWith',
       fixtureUri,

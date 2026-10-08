@@ -143,7 +143,10 @@ export class PdfCustomProvider implements vscode.CustomReadonlyEditorProvider {
   }
 
   private recordViewerEvent(event: ViewerEvent): void {
-    const recorded = { ...event, receivedAt: Date.now() };
+    // performance.now() only moves forward. The wall clock can step back, for
+    // example when WSL2 resynchronises time, and a test that waits for an
+    // event after a given time then ignores the event it waits for.
+    const recorded = { ...event, receivedAt: performance.now() };
     this.lastViewerEvent = recorded;
     if (event.type === 'viewer-error') {
       this.log.appendLine(`[error] ${event.resource}: ${event.message}`);
