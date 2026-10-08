@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.5.0 (2026/10/08)
 
 - **PDF.js went from 6.2.108 to 6.4.299.**
 - **Scanned pages show their images.** JBIG2, CCITT fax and JPEG 2000
