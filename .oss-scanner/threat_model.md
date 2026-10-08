@@ -25,9 +25,12 @@ command in a trusted workspace runs by design.
 ## Components that matter most / least
 - Most: the webview Content Security Policy and nonce handling (`src/pdfPreview.ts`);
   the message contract (`src/webviewContract.ts`); PDF link handling
-  (`resolvePdfLinkTarget`, `open-pdf-link`, `open-external`), which must not open
-  arbitrary URIs, escape the PDF's folder, or reach `command:` URIs; `src/print.ts`
-  (`spawn` with an argument array, workspace trust check); `localResourceRoots`.
+  (`resolvePdfLinkTarget`, `open-pdf-link`), which must accept only relative links to
+  local `.pdf` files and must not escape the PDF's folder or reach any URI scheme,
+  `command:` included; `open-external`, which opens the current PDF in the operating
+  system's default application and which the webview can send without a click;
+  `src/print.ts` (`spawn` with an argument array, workspace trust check);
+  `localResourceRoots`.
 - In scope: our webview code in `lib/*.mjs` (DOM writes, `copy-text`, view state), and
   the PDF.js options we set (scripting, eval, XFA, WASM decoders).
 - PDF.js itself: a PDF.js bug counts when it is reachable with the version and options
