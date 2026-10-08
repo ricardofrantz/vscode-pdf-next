@@ -15,7 +15,7 @@ on:
         type: boolean
         default: true
       confirm_publish:
-        description: Type "publish <tag>" to allow GitHub Release, Marketplace, and Open VSX publishing when dry_run is false (workflow_dispatch only).
+        description: Type "publish <tag>" to allow GitHub Release and Marketplace publishing when dry_run is false (workflow_dispatch only).
         required: false
         default: ''
 
@@ -223,14 +223,3 @@ jobs:
           fi
           VSIX="$(ls pdf-preview-next-*.vsix | head -n 1)"
           ./node_modules/.bin/vsce publish --packagePath "$VSIX" -p "$VSCE_PAT"
-
-      - name: Publish to Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: |
-          if [ -z "$OVSX_PAT" ]; then
-            echo "Open VSX publish skipped: OVSX_PAT is not configured (optional)."
-            exit 0
-          fi
-          VSIX="$(ls pdf-preview-next-*.vsix | head -n 1)"
-          ./node_modules/.bin/ovsx publish "$VSIX" -p "$OVSX_PAT"

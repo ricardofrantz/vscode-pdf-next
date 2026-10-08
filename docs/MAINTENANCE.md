@@ -107,8 +107,8 @@ Check for shell injection, webview XSS sinks, workspace trust bypasses, unsafe P
 - `bun run test` and package scan pass.
 - Locally installed VSIX has been smoke-tested.
 - Optional: dry-run the Release workflow before cutting a public release.
-- Push `vX.Y.Z` to publish automatically (GitHub Release + Marketplace + optional Open VSX).
-- Ensure `VSCE_PAT` is configured; `OVSX_PAT` is optional.
+- Push `vX.Y.Z` to publish automatically (GitHub Release + Marketplace).
+- Ensure `VSCE_PAT` is configured.
 - Keep third-party actions SHA-pinned. Tag pushes publish after verify; manual
   `workflow_dispatch` still requires `dry_run=false` and `confirm_publish=publish vX.Y.Z`.
 
