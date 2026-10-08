@@ -33,6 +33,12 @@ command in a trusted workspace runs by design.
   `localResourceRoots`.
 - In scope: our webview code in `lib/*.mjs` (DOM writes, `copy-text`, view state), and
   the PDF.js options we set (scripting, eval, XFA, WASM decoders).
+- WebAssembly image decoders: PDF.js 6.4.299 runs `lib/pdfjs/wasm/jbig2.wasm` and
+  `openjpeg.wasm` (C code compiled to WebAssembly) on JBIG2 and JPEG 2000 images taken
+  from the PDF (`useWasm: true` in `lib/main.mjs`). The CSP allows `'wasm-unsafe-eval'`
+  for them and still forbids `'unsafe-eval'` (`src/pdfPreview.ts`). Memory corruption
+  in a decoder stays inside the WebAssembly sandbox; it matters when it gives control
+  of script in the webview.
 - PDF.js itself: a PDF.js bug counts when it is reachable with the version and options
   we ship and it escapes the PDF.js sandbox, for example script running in the webview.
   We forward such reports to Mozilla. Crashes or slow rendering inside PDF.js alone
