@@ -26,7 +26,7 @@ much stronger security posture.
   and an inversion fallback for scanned documents. Your PDFs finally fit your
   dark setup.
 - ⚡ **Fast.** Powered by the latest Mozilla PDF.js — currently
-  `pdfjs-dist@6.2.108`, the same engine Firefox uses — with all PDF parsing
+  `pdfjs-dist@6.4.299`, the same engine Firefox uses — with all PDF parsing
   and decoding in a dedicated worker thread so the interface never blocks.
   No telemetry, no network calls, no cloud round-trips: your PDFs never
   leave your machine.
@@ -155,7 +155,7 @@ toggle.
 Rendering untrusted PDFs deserves real sandboxing, so this extension treats
 security as a feature:
 
-- **Current runtime: `pdfjs-dist@6.2.108`** (Mozilla's PDF.js), kept up to
+- **Current runtime: `pdfjs-dist@6.4.299`** (Mozilla's PDF.js), kept up to
   date with upstream security fixes.
 - Webview scripts are **nonce-bound** with scoped `localResourceRoots`.
 - **No dynamic code execution**: the vendored PDF.js 6 runtime contains no

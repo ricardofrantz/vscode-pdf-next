@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { assertViewerContract } from './viewer_contract.mjs';
 
@@ -276,6 +276,38 @@ assert.match(
   'lib/pdfjs/web/pdf_viewer.mjs must keep 3 rendered pages, not the upstream 10; ' +
     'rendered canvases dominate resident memory. Run bun run update:pdfjs to reapply.',
 );
+assert.match(
+  viewerSource,
+  /const width = this\.pageView\.div\.clientWidth \|\| viewport\.width;/,
+  'lib/pdfjs/web/pdf_viewer.mjs must place the detail canvas in the rounded page box; ' +
+    'otherwise the sharp region is resampled and blurred. Run bun run update:pdfjs to reapply.',
+);
+assert.ok(
+  coreSource.includes('complete=t=>{w.renderTasks.delete(_);if(C&&!t){'),
+  'lib/pdfjs/build/pdf.min.mjs must cache operation bounds only from a completed render; ' +
+    'bounds from a cancelled render make later detail renders skip content. ' +
+    'Run bun run update:pdfjs to reapply.',
+);
+
+// With useWasm=false the worker imports a JavaScript decoder from wasmUrl for
+// each image codec it cannot decode itself. A missing file does not fail the
+// load: the images that need it are left out of the page. Check every file
+// that the worker names.
+const fallbackNames = new Set(
+  workerSource.match(/[a-z0-9]+_nowasm_fallback\.js/g) ?? [],
+);
+assert.ok(
+  fallbackNames.size > 0,
+  'pdf.worker.min.mjs no longer names a *_nowasm_fallback.js decoder; review the wasm copy list.',
+);
+for (const name of fallbackNames) {
+  await access(`lib/pdfjs/wasm/${name}`).catch(() => {
+    assert.fail(
+      `lib/pdfjs/wasm/${name} is missing, so the images it decodes are not drawn. ` +
+        'Add it to the copy list in tools/update_pdfjs.jsonc.',
+    );
+  });
+}
 
 assertViewerContract({
   webviewSource,
