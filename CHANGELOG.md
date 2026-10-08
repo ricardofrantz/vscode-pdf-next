@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+- **PDF.js went from 6.2.108 to 6.4.299.**
+- **Scanned pages show their images.** JBIG2, CCITT fax and JPEG 2000
+  images were blank, because the worker could not load the JavaScript
+  decoders. The viewer now decodes these images with WebAssembly. The CSP
+  adds `'wasm-unsafe-eval'` and still has no `'unsafe-eval'`. The package
+  ships two `.wasm` files, and the release scanner rejects any other.
+- **A page canvas holds at most 4,194,304 pixels (16.8 MB).** PDF.js draws a
+  larger page at low resolution and redraws only the visible region sharp.
+  At 200% zoom on a 2x display, the canvases of a dense page fell from 14.2
+  to 3.4 megapixels, which is 57 MB to 14 MB.
+- **The pages redraw when the display density changes.** After a VS Code
+  zoom, the pages kept their old resolution and looked blurred.
+- **Two engine patches came over from pdf-next.** The sharp detail canvas
+  now fits the rounded page box. A cancelled render no longer records the
+  bounds that later detail renders use to skip content.
+- **The Liberation font licence file is correct.** Upstream replaced the SIL
+  Open Font License text with the GPL v2 and font exception that applies to
+  version 1.07.4. The font files did not change.
+- **The PDF.js updater reads the output of npm 12.**
+
 ## 2.4.3 (2026/08/12)
 
 Clear came back on the wheel and then went away again, because nothing was
