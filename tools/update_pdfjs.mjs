@@ -84,7 +84,12 @@ async function main() {
     config.workDirectory,
     '--json',
   ]);
-  const [packInfo] = JSON.parse(packOutput);
+  // npm 11 prints an array of results. npm 12 prints an object with one key
+  // for each package name.
+  const packResult = JSON.parse(packOutput);
+  const [packInfo] = Array.isArray(packResult)
+    ? packResult
+    : Object.values(packResult);
 
   if (packInfo.integrity !== config.integrity) {
     throw new Error(`Integrity mismatch: ${packInfo.integrity} !== ${config.integrity}`);
