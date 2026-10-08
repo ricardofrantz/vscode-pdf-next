@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **A test now checks that scanned-page images are drawn.** It opens a CCITT
+  fax page and a JPEG 2000 page and measures the drawn pixels. The 2.5.0
+  decoder fault passed every test because the load still succeeded.
+- **Releases go to the VS Code Marketplace only.** The release workflow no
+  longer has the Open VSX step, which every release skipped.
+
 ## 2.5.0 (2026/10/08)
 
 - **PDF.js went from 6.2.108 to 6.4.299.**
