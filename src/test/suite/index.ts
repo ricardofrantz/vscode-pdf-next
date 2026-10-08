@@ -807,7 +807,13 @@ export async function run(): Promise<void> {
   assert.match(webviewSourceText, /style-src 'unsafe-inline'/);
   assert.match(webviewSourceText, /script-src 'nonce-\$\{nonce\}'/);
   assert.doesNotMatch(webviewSourceText, /script-src[^\n]+unsafe-inline/);
-  assert.doesNotMatch(webviewSourceText, /unsafe-eval|wasm-unsafe-eval/);
+  // WebAssembly compiles for the PDF.js image decoders, but eval() stays off.
+  assert.match(
+    webviewSourceText,
+    /script-src 'nonce-\$\{nonce\}' 'wasm-unsafe-eval' /,
+    'PDF.js needs WebAssembly to decode JBIG2, CCITT fax and JPEG 2000 images.',
+  );
+  assert.doesNotMatch(webviewSourceText, /'unsafe-eval'/);
   assert.match(webviewSourceText, /Could not start PDF viewer:/);
   assert.match(webviewSourceText, /addEventListener\('unhandledrejection'/);
   assert.match(webviewSourceText, /viewer-ready/);

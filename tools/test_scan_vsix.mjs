@@ -37,6 +37,9 @@ const forbiddenSamples = [
   'extension/scratch/probe.txt',
   'extension/tmp/probe.txt',
   'extension/temp/probe.txt',
+  'extension/lib/pdfjs/wasm/qcms_bg.wasm',
+  'extension/lib/pdfjs/wasm/quickjs-eval.wasm',
+  'extension/dist/jbig2.wasm',
 ];
 
 for (const sample of forbiddenSamples) {

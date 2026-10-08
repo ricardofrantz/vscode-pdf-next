@@ -841,7 +841,9 @@ export class PdfPreview extends Disposable {
       `connect-src ${cspSource}`,
       `font-src ${cspSource}`,
       `img-src blob: data: ${cspSource}`,
-      `script-src 'nonce-${nonce}' ${cspSource}`,
+      // 'wasm-unsafe-eval' lets PDF.js compile its WebAssembly image decoders.
+      // It does not allow eval() or new Function().
+      `script-src 'nonce-${nonce}' 'wasm-unsafe-eval' ${cspSource}`,
       `style-src 'unsafe-inline' ${cspSource}`,
       `worker-src ${cspSource} blob:`,
     ].join('; ');

@@ -24,7 +24,8 @@ export const forbiddenEntries = [
   /\.tsx?$/i,
   /\.vsix$/i,
   /(^|\/)sandbox(?:\.|\/)/i,
-  /\.wasm$/i,
+  // Only the two PDF.js image decoders may ship as WebAssembly.
+  /^(?!extension\/lib\/pdfjs\/wasm\/(?:jbig2|openjpeg)\.wasm$).*\.wasm$/i,
 ];
 
 export const requiredEntries = [
@@ -37,6 +38,8 @@ export const requiredEntries = [
   'extension/lib/pdfjs/build/pdf.worker.min.mjs',
   'extension/lib/pdfjs/web/pdf_viewer.css',
   'extension/lib/pdfjs/web/pdf_viewer.mjs',
+  'extension/lib/pdfjs/wasm/jbig2.wasm',
+  'extension/lib/pdfjs/wasm/openjpeg.wasm',
 ];
 
 export function findForbiddenEntries(entries) {

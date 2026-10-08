@@ -24,23 +24,18 @@
     { "from": "web/images", "to": "lib/pdfjs/web/images" },
     { "from": "cmaps", "to": "lib/pdfjs/cmaps" },
     { "from": "standard_fonts", "to": "lib/pdfjs/standard_fonts" },
-    // PDF.js runs with useWasm=false to avoid webview wasm-eval CSP permission.
-    // Keep the JavaScript decoders that PDF.js imports from wasmUrl instead.
-    // OpenJPEG decodes JPEG 2000 images. The JBIG2 module decodes JBIG2 and
-    // CCITT fax images, the usual formats of scanned pages.
-    {
-      "from": "wasm/openjpeg_nowasm_fallback.js",
-      "to": "lib/pdfjs/wasm/openjpeg_nowasm_fallback.js",
-    },
+    // The worker decodes images with WebAssembly. OpenJPEG decodes JPEG 2000
+    // images. The JBIG2 module decodes JBIG2 and CCITT fax images, the usual
+    // formats of scanned pages. The worker cannot import the JavaScript
+    // fallbacks in a webview, so they are not shipped. qcms_bg.wasm is not
+    // shipped: PDF.js loads it only with useWorkerFetch=true.
+    { "from": "wasm/openjpeg.wasm", "to": "lib/pdfjs/wasm/openjpeg.wasm" },
     { "from": "wasm/LICENSE_OPENJPEG", "to": "lib/pdfjs/wasm/LICENSE_OPENJPEG" },
     {
       "from": "wasm/LICENSE_PDFJS_OPENJPEG",
       "to": "lib/pdfjs/wasm/LICENSE_PDFJS_OPENJPEG",
     },
-    {
-      "from": "wasm/jbig2_nowasm_fallback.js",
-      "to": "lib/pdfjs/wasm/jbig2_nowasm_fallback.js",
-    },
+    { "from": "wasm/jbig2.wasm", "to": "lib/pdfjs/wasm/jbig2.wasm" },
     { "from": "wasm/LICENSE_JBIG2", "to": "lib/pdfjs/wasm/LICENSE_JBIG2" },
     {
       "from": "wasm/LICENSE_PDFJS_JBIG2",

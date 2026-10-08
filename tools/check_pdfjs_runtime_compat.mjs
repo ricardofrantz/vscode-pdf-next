@@ -289,18 +289,21 @@ assert.ok(
     'Run bun run update:pdfjs to reapply.',
 );
 
-// With useWasm=false the worker imports a JavaScript decoder from wasmUrl for
-// each image codec it cannot decode itself. A missing file does not fail the
-// load: the images that need it are left out of the page. Check every file
-// that the worker names.
-const fallbackNames = new Set(
-  workerSource.match(/[a-z0-9]+_nowasm_fallback\.js/g) ?? [],
+// The worker decodes JBIG2, CCITT fax and JPEG 2000 images with WebAssembly.
+// It names each decoder module in a _filename field, and the main thread
+// fetches that file from wasmUrl. A missing file does not fail the load.
+// PDF.js leaves out the images that need it instead. Check every file that
+// the worker names.
+const wasmNames = new Set(
+  [...workerSource.matchAll(/_filename="([a-z0-9_]+\.wasm)"/g)].map(
+    (match) => match[1],
+  ),
 );
 assert.ok(
-  fallbackNames.size > 0,
-  'pdf.worker.min.mjs no longer names a *_nowasm_fallback.js decoder; review the wasm copy list.',
+  wasmNames.size > 0,
+  'pdf.worker.min.mjs no longer names a .wasm image decoder; review the wasm copy list.',
 );
-for (const name of fallbackNames) {
+for (const name of wasmNames) {
   await access(`lib/pdfjs/wasm/${name}`).catch(() => {
     assert.fail(
       `lib/pdfjs/wasm/${name} is missing, so the images it decodes are not drawn. ` +
@@ -308,6 +311,12 @@ for (const name of fallbackNames) {
     );
   });
 }
+assert.match(
+  mainSource,
+  /useWasm: true,/,
+  'lib/main.mjs must set useWasm: true. The worker cannot import the JavaScript ' +
+    'decoder fallbacks in a webview, so without WebAssembly the images are left out.',
+);
 
 assertViewerContract({
   webviewSource,

@@ -31,8 +31,9 @@ much stronger security posture.
   No telemetry, no network calls, no cloud round-trips: your PDFs never
   leave your machine.
 - 🔒 **Secure by design.** Strict webview sandboxing, no shell execution,
-  script eval and WASM disabled, and every release package automatically
-  scanned before publishing. See the [security model](#security-model) below.
+  script eval disabled, WebAssembly limited to PDF.js's own image decoders,
+  and every release package automatically scanned before publishing. See the
+  [security model](#security-model) below.
 - 🔁 **Built for TeX/Typst workflows.** Debounced live reload keeps your page,
   zoom, and scroll position exactly where they were — even when your build
   tool deletes and recreates the PDF mid-compile.
@@ -160,8 +161,11 @@ security as a feature:
 - Webview scripts are **nonce-bound** with scoped `localResourceRoots`.
 - **No dynamic code execution**: the vendored PDF.js 6 runtime contains no
   `eval` or `new Function` (verified by an automated check on every build),
-  WASM execution is disabled, and the CSP forbids `unsafe-eval` anyway — a
-  malicious PDF cannot run arbitrary code.
+  and the CSP forbids `unsafe-eval` anyway — a malicious PDF cannot run
+  arbitrary code. The CSP allows WebAssembly (`wasm-unsafe-eval`) only so
+  PDF.js can run its JBIG2 and JPEG 2000 image decoders, which scanned pages
+  need. Those two `.wasm` files ship in the package, and the release scanner
+  rejects any other `.wasm` file.
 - **PDF parsing runs in a sandboxed worker thread**, keeping documents off the
   UI thread; the extension verifies at test time that the real worker spawns.
 - The default print path performs **no shell execution**; the optional custom

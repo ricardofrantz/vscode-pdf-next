@@ -149,3 +149,18 @@ JavaScript fallback). Document bytes now travel from the extension host to
 the viewer over the webview message channel, so `localResourceRoots` is
 restricted to the extension directory alone — the webview can no longer load
 anything from the opened PDF's directory.
+
+**Update (2026-10).** The vendored runtime is now `pdfjs-dist@6.4.299`, and
+WebAssembly is enabled for PDF.js's image decoders only. With
+`useWasm: false`, the worker tried to import JavaScript fallback decoders from
+the extension folder, and a worker in a VS Code webview cannot load them. JBIG2,
+CCITT fax and JPEG 2000 images, which is how most scanned pages are stored,
+were left out of the page without an error. The webview CSP now adds
+`'wasm-unsafe-eval'` to `script-src`. That keyword permits WebAssembly
+compilation; it does not permit `eval()` or `new Function()`, and the CSP still
+has no `'unsafe-eval'`. The package ships exactly two modules,
+`lib/pdfjs/wasm/jbig2.wasm` and `lib/pdfjs/wasm/openjpeg.wasm`, copied from the
+integrity-checked `pdfjs-dist` tarball. `tools/scan_vsix.mjs` rejects any other
+`.wasm` file and fails a package that is missing either module. The PDF
+scripting engine (`quickjs-eval.wasm`) and the colour-management module
+(`qcms_bg.wasm`) are not shipped.
