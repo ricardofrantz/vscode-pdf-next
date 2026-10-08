@@ -724,6 +724,11 @@ export async function run(): Promise<void> {
   );
   assert.ok(extension, 'PDF Preview Next extension should be registered.');
   assert.strictEqual(extension.packageJSON.displayName, 'vscode-pdf Next');
+  // activate() registers the internal test commands. Opening a custom editor
+  // starts the activation, but vscode.openWith can return before it ends.
+  // VS Code 1.141 on macOS then reported that
+  // 'pdf-preview.internal.waitForViewerEvent' was not found.
+  await extension.activate();
   await assertCheckedInFixtures(extension);
   await assertRuntimeConfigurationScope(extension);
 
