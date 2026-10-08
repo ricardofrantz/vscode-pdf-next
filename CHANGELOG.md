@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.5.1 (2026/10/09)
 
 - **A test now checks that scanned-page images are drawn.** It opens a CCITT
   fax page and a JPEG 2000 page and measures the drawn pixels. The decoder
